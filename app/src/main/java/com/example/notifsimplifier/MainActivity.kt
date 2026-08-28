@@ -1,5 +1,6 @@
 package com.example.notifsimplifier
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -22,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.notifsimplifier.data.AppDatabase
 import com.example.notifsimplifier.data.AppSettingEntity
+import com.example.notifsimplifier.service.MyNotificationListener
 import com.example.notifsimplifier.ui.AppSettingsScreen
 import com.example.notifsimplifier.ui.NewAppsDialog
 import com.example.notifsimplifier.ui.NotificationListScreen
@@ -64,8 +66,12 @@ class MainActivity : ComponentActivity() {
                             NotificationListScreen(
                                 notifications = notifications,
                                 onOpenNotificationAccessSettings = { openNotificationAccessSettings() },
-                                onClearAll = { lifecycleScope.launch { notifDao.clearAll() } },
-                                onOpenSettings = { navController.navigate("settings") }
+                                onClearAll = {
+                                    lifecycleScope.launch { notifDao.clearAll() }
+                                    MyNotificationListener.pendingIntents.clear()
+                                },
+                                onOpenSettings = { navController.navigate("settings") },
+                                onNotificationClick = { notif -> fireNotificationIntent(notif.id, notif.appName) }
                             )
                         }
                         composable("settings") {
@@ -117,6 +123,21 @@ class MainActivity : ComponentActivity() {
                     )
                 }.getOrNull()
             }
+    }
+
+    private fun fireNotificationIntent(notifId: Long, packageName: String) {
+        val pi = MyNotificationListener.pendingIntents[notifId]
+        if (pi != null) {
+            try {
+                pi.send()
+                return
+            } catch (_: PendingIntent.CanceledException) {
+                MyNotificationListener.pendingIntents.remove(notifId)
+            }
+        }
+        // Fallback: open the app's launcher activity
+        packageManager.getLaunchIntentForPackage(packageName)
+            ?.let { startActivity(it) }
     }
 
     private fun openNotificationAccessSettings() {

@@ -1,6 +1,7 @@
 package com.example.notifsimplifier.service
 
 import android.app.Notification
+import android.app.PendingIntent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.example.notifsimplifier.data.AppDatabase
@@ -26,6 +27,8 @@ class MyNotificationListener : NotificationListenerService() {
         // OTPs must always show normally — check before any DB lookup.
         if (OtpDetector.isOtp(title, text)) return
 
+        val contentIntent = sbn.notification.contentIntent
+
         scope.launch {
             val db = AppDatabase.getInstance(applicationContext)
             val settings = db.appSettingDao().getByPackage(packageName)
@@ -39,7 +42,7 @@ class MyNotificationListener : NotificationListenerService() {
             // Nothing is redirected until the user explicitly opts the app in.
             if (!settings.isRedirected) return@launch
 
-            db.notificationDao().insert(
+            val rowId = db.notificationDao().insert(
                 NotificationEntity(
                     appName = packageName,
                     title = title,
@@ -47,9 +50,16 @@ class MyNotificationListener : NotificationListenerService() {
                     timestamp = System.currentTimeMillis()
                 )
             )
+            if (contentIntent != null) pendingIntents[rowId] = contentIntent
             cancelNotification(sbn.key)
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
+
+    companion object {
+        // In-memory store of content intents keyed by DB row ID.
+        // Survives for the process lifetime; cleared when the user clears all notifications.
+        val pendingIntents = mutableMapOf<Long, PendingIntent>()
+    }
 }

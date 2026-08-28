@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 interface NotificationDao {
 
     @Insert
-    suspend fun insert(notification: NotificationEntity)
+    suspend fun insert(notification: NotificationEntity): Long
 
     // Newest first, plain list — no unread counts, no badges by design.
     @Query("SELECT * FROM notifications ORDER BY timestamp DESC")

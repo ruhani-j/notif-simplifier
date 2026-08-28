@@ -1,5 +1,6 @@
 package com.example.notifsimplifier.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,7 +39,8 @@ fun NotificationListScreen(
     notifications: List<NotificationEntity>,
     onOpenNotificationAccessSettings: () -> Unit,
     onClearAll: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onNotificationClick: (NotificationEntity) -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()) }
 
@@ -76,6 +78,7 @@ fun NotificationListScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clickable { onNotificationClick(item) }
                                 .padding(horizontal = 16.dp, vertical = 10.dp)
                         ) {
                             Text(
