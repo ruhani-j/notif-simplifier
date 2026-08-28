@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
             var otpBypassEnabled by remember { mutableStateOf(prefs.getBoolean("otp_bypass", true)) }
             var systemFilterEnabled by remember { mutableStateOf(prefs.getBoolean("system_filter", true)) }
             var ongoingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("ongoing_filter", true)) }
+            var marketingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("marketing_filter", false)) }
             var neverRedirectPackages by remember {
                 mutableStateOf(prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet())
             }
@@ -134,6 +135,11 @@ class MainActivity : ComponentActivity() {
                                 onOngoingFilterChange = { enabled ->
                                     ongoingFilterEnabled = enabled
                                     prefs.edit().putBoolean("ongoing_filter", enabled).apply()
+                                },
+                                marketingFilterEnabled = marketingFilterEnabled,
+                                onMarketingFilterChange = { enabled ->
+                                    marketingFilterEnabled = enabled
+                                    prefs.edit().putBoolean("marketing_filter", enabled).apply()
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onNeverRedirect = { navController.navigate("never_redirect") },

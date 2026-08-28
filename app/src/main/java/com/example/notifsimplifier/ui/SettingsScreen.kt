@@ -79,6 +79,8 @@ fun SettingsScreen(
     onSystemFilterChange: (Boolean) -> Unit,
     ongoingFilterEnabled: Boolean,
     onOngoingFilterChange: (Boolean) -> Unit,
+    marketingFilterEnabled: Boolean,
+    onMarketingFilterChange: (Boolean) -> Unit,
     onManageApps: () -> Unit,
     onNeverRedirect: () -> Unit,
     onGrantNotificationAccess: () -> Unit,
@@ -87,6 +89,7 @@ fun SettingsScreen(
     var showOtpInfo by remember { mutableStateOf(false) }
     var showSystemInfo by remember { mutableStateOf(false) }
     var showInstallInfo by remember { mutableStateOf(false) }
+    var showMarketingInfo by remember { mutableStateOf(false) }
 
     if (showOtpInfo) {
         AlertDialog(
@@ -129,6 +132,31 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showSystemInfo = false }) {
+                    Text("Got it", fontFamily = FontFamily.Monospace)
+                }
+            }
+        )
+    }
+
+    if (showMarketingInfo) {
+        AlertDialog(
+            onDismissRequest = { showMarketingInfo = false },
+            title = { Text("Redirect marketing spam", fontFamily = FontFamily.Monospace) },
+            text = {
+                Text(
+                    text = "When enabled, promotional notifications from apps set to Instant are " +
+                        "automatically redirected to the list instead of popping up normally.\n\n" +
+                        "Detected by keywords like \"% off\", \"deal\", \"craving\", \"limited time\", " +
+                        "\"exclusive\" etc. Order tracking notifications (driver arriving, order " +
+                        "confirmed, etc.) are never caught — transactional content always takes " +
+                        "priority.\n\n" +
+                        "Only applies to apps set to Instant. Redirect apps are already captured.",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showMarketingInfo = false }) {
                     Text("Got it", fontFamily = FontFamily.Monospace)
                 }
             }
@@ -230,6 +258,12 @@ fun SettingsScreen(
                 checked = ongoingFilterEnabled,
                 onCheckedChange = onOngoingFilterChange,
                 onInfoClick = { showInstallInfo = true }
+            )
+            SmartFilterRow(
+                label = "Redirect marketing spam",
+                checked = marketingFilterEnabled,
+                onCheckedChange = onMarketingFilterChange,
+                onInfoClick = { showMarketingInfo = true }
             )
 
             HorizontalDivider()

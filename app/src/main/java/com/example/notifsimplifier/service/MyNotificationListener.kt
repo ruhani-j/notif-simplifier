@@ -87,7 +87,22 @@ class MyNotificationListener : NotificationListenerService() {
                     if (contentIntent != null) pendingIntents[rowId] = contentIntent
                     cancelNotification(sbn.key)
                 }
-                NotifMode.INSTANT -> Unit // show normally
+                NotifMode.INSTANT -> {
+                    val marketingFilterEnabled = prefs.getBoolean("marketing_filter", false)
+                    if (marketingFilterEnabled && MarketingDetector.isMarketing(title, text)) {
+                        val rowId = db.notificationDao().insert(
+                            NotificationEntity(
+                                appName = packageName,
+                                title = title,
+                                text = text,
+                                timestamp = System.currentTimeMillis()
+                            )
+                        )
+                        if (contentIntent != null) pendingIntents[rowId] = contentIntent
+                        cancelNotification(sbn.key)
+                    }
+                    // Otherwise show normally.
+                }
             }
         }
     }
