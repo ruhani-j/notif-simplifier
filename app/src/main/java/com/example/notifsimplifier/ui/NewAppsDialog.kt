@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ fun NewAppsDialog(
     onDismiss: (List<AppSettingEntity>) -> Unit
 ) {
     val appsState = remember(newApps) { newApps.toMutableStateList() }
+    val allSelected = appsState.all { it.isRedirected }
 
     AlertDialog(
         onDismissRequest = { onDismiss(appsState.toList()) },
@@ -43,6 +45,31 @@ fun NewAppsDialog(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(Modifier.height(12.dp))
+
+                // Select all row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Select all",
+                        modifier = Modifier.weight(1f),
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Switch(
+                        checked = allSelected,
+                        onCheckedChange = { checked ->
+                            appsState.indices.forEach { i ->
+                                appsState[i] = appsState[i].copy(isRedirected = checked)
+                            }
+                        }
+                    )
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
                 appsState.forEachIndexed { i, app ->
                     Row(
                         modifier = Modifier
