@@ -33,6 +33,9 @@ class MyNotificationListener : NotificationListenerService() {
 
         val prefs = applicationContext.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
+        val neverRedirect = prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet()
+        if (packageName in neverRedirect) return
+
         if (prefs.getBoolean("otp_bypass", true) && OtpDetector.isOtp(title, text)) return
 
         if (prefs.getBoolean("system_filter", true) &&

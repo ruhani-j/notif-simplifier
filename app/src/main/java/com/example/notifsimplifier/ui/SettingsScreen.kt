@@ -80,6 +80,7 @@ fun SettingsScreen(
     ongoingFilterEnabled: Boolean,
     onOngoingFilterChange: (Boolean) -> Unit,
     onManageApps: () -> Unit,
+    onNeverRedirect: () -> Unit,
     onGrantNotificationAccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
@@ -254,11 +255,27 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNeverRedirect() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Never redirect",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
                 )
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             HorizontalDivider()

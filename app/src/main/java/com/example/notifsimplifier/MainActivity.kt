@@ -29,6 +29,7 @@ import com.example.notifsimplifier.data.AppDatabase
 import com.example.notifsimplifier.data.NotifMode
 import com.example.notifsimplifier.service.MyNotificationListener
 import com.example.notifsimplifier.ui.AppSettingsScreen
+import com.example.notifsimplifier.ui.NeverRedirectScreen
 import com.example.notifsimplifier.ui.NotificationListScreen
 import com.example.notifsimplifier.ui.SetFilterScreen
 import com.example.notifsimplifier.ui.SettingsScreen
@@ -63,6 +64,9 @@ class MainActivity : ComponentActivity() {
             var otpBypassEnabled by remember { mutableStateOf(prefs.getBoolean("otp_bypass", true)) }
             var systemFilterEnabled by remember { mutableStateOf(prefs.getBoolean("system_filter", true)) }
             var ongoingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("ongoing_filter", true)) }
+            var neverRedirectPackages by remember {
+                mutableStateOf(prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet())
+            }
 
             val darkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
@@ -132,6 +136,7 @@ class MainActivity : ComponentActivity() {
                                     prefs.edit().putBoolean("ongoing_filter", enabled).apply()
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
+                                onNeverRedirect = { navController.navigate("never_redirect") },
                                 onGrantNotificationAccess = { openNotificationAccessSettings() },
                                 onNavigateBack = { navController.popBackStack() }
                             )
@@ -139,6 +144,18 @@ class MainActivity : ComponentActivity() {
                         composable("manage_apps") {
                             AppSettingsScreen(
                                 appSettingDao = appSettingDao,
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("never_redirect") {
+                            NeverRedirectScreen(
+                                neverRedirectPackages = neverRedirectPackages,
+                                onToggle = { pkg, blocked ->
+                                    val updated = if (blocked) neverRedirectPackages + pkg
+                                                 else neverRedirectPackages - pkg
+                                    neverRedirectPackages = updated
+                                    prefs.edit().putStringSet("never_redirect_packages", updated).apply()
+                                },
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
