@@ -3,6 +3,7 @@ package com.example.notifsimplifier.service
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
+import android.os.Parcel
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.example.notifsimplifier.data.AppDatabase
@@ -85,7 +86,8 @@ class MyNotificationListener : NotificationListenerService() {
                             appName = packageName,
                             title = title,
                             text = text,
-                            timestamp = System.currentTimeMillis()
+                            timestamp = System.currentTimeMillis(),
+                            intentBytes = contentIntent?.let { marshallIntent(it) }
                         )
                     )
                     if (contentIntent != null) pendingIntents[rowId] = contentIntent
@@ -99,7 +101,8 @@ class MyNotificationListener : NotificationListenerService() {
                                 appName = packageName,
                                 title = title,
                                 text = text,
-                                timestamp = System.currentTimeMillis()
+                                timestamp = System.currentTimeMillis(),
+                                intentBytes = contentIntent?.let { marshallIntent(it) }
                             )
                         )
                         if (contentIntent != null) pendingIntents[rowId] = contentIntent
@@ -112,6 +115,16 @@ class MyNotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
+
+    private fun marshallIntent(pi: PendingIntent): ByteArray? {
+        return try {
+            val parcel = Parcel.obtain()
+            pi.writeToParcel(parcel, 0)
+            val bytes = parcel.marshall()
+            parcel.recycle()
+            bytes
+        } catch (_: Exception) { null }
+    }
 
     companion object {
         val pendingIntents = mutableMapOf<Long, PendingIntent>()

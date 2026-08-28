@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Parcel
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -138,7 +139,7 @@ class MainActivity : ComponentActivity() {
                                     MyNotificationListener.pendingIntents.clear()
                                 },
                                 onOpenSettings = { navController.navigate("settings") },
-                                onNotificationClick = { notif -> fireNotificationIntent(notif.id, notif.appName) },
+                                onNotificationClick = { notif -> fireNotificationIntent(notif.id, notif.appName, notif.intentBytes) },
                                 onDismissNotification = { notif ->
                                     lifecycleScope.launch { notifDao.deleteById(notif.id) }
                                     MyNotificationListener.pendingIntents.remove(notif.id)
@@ -232,8 +233,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun fireNotificationIntent(notifId: Long, packageName: String) {
+    private fun fireNotificationIntent(notifId: Long, packageName: String, intentBytes: ByteArray?) {
         val pi = MyNotificationListener.pendingIntents[notifId]
+            ?: intentBytes?.let { restorePendingIntent(it) }
         if (pi != null) {
             try {
                 pi.send()
@@ -244,6 +246,15 @@ class MainActivity : ComponentActivity() {
         }
         packageManager.getLaunchIntentForPackage(packageName)
             ?.let { startActivity(it) }
+    }
+
+    private fun restorePendingIntent(bytes: ByteArray): PendingIntent? {
+        return try {
+            val parcel = Parcel.obtain()
+            parcel.unmarshall(bytes, 0, bytes.size)
+            parcel.setDataPosition(0)
+            PendingIntent.CREATOR.createFromParcel(parcel).also { parcel.recycle() }
+        } catch (_: Exception) { null }
     }
 
     private fun openNotificationAccessSettings() {
