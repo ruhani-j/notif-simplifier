@@ -34,6 +34,40 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
+@Composable
+private fun SmartFilterRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onInfoClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onInfoClick) {
+            Icon(
+                Icons.Outlined.Info,
+                contentDescription = "About $label",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.padding(end = 12.dp)
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -41,11 +75,17 @@ fun SettingsScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     otpBypassEnabled: Boolean,
     onOtpBypassChange: (Boolean) -> Unit,
+    systemFilterEnabled: Boolean,
+    onSystemFilterChange: (Boolean) -> Unit,
+    ongoingFilterEnabled: Boolean,
+    onOngoingFilterChange: (Boolean) -> Unit,
     onManageApps: () -> Unit,
     onGrantNotificationAccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     var showOtpInfo by remember { mutableStateOf(false) }
+    var showSystemInfo by remember { mutableStateOf(false) }
+    var showInstallInfo by remember { mutableStateOf(false) }
 
     if (showOtpInfo) {
         AlertDialog(
@@ -65,6 +105,52 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showOtpInfo = false }) {
+                    Text("Got it", fontFamily = FontFamily.Monospace)
+                }
+            }
+        )
+    }
+
+    if (showSystemInfo) {
+        AlertDialog(
+            onDismissRequest = { showSystemInfo = false },
+            title = { Text("Skip system notifications", fontFamily = FontFamily.Monospace) },
+            text = {
+                Text(
+                    text = "When enabled, notifications from Android system apps — such as " +
+                        "Settings, SystemUI, the phone dialer, and other built-in or OEM apps " +
+                        "— are never redirected.\n\n" +
+                        "Turn this off only if you specifically want to capture system-level " +
+                        "notifications in the list.",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showSystemInfo = false }) {
+                    Text("Got it", fontFamily = FontFamily.Monospace)
+                }
+            }
+        )
+    }
+
+    if (showInstallInfo) {
+        AlertDialog(
+            onDismissRequest = { showInstallInfo = false },
+            title = { Text("Skip ongoing notifications", fontFamily = FontFamily.Monospace) },
+            text = {
+                Text(
+                    text = "When enabled, persistent status notifications are never redirected. " +
+                        "This includes music playback controls, turn-by-turn navigation, " +
+                        "app downloads and installs, VPN and hotspot indicators, active calls, " +
+                        "and screen recording — anything designed to stay visible continuously " +
+                        "rather than as a one-time message.",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showInstallInfo = false }) {
                     Text("Got it", fontFamily = FontFamily.Monospace)
                 }
             }
@@ -126,31 +212,24 @@ fun SettingsScreen(
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Skip OTP notifications",
-                    fontFamily = FontFamily.Monospace,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = { showOtpInfo = true }) {
-                    Icon(
-                        Icons.Outlined.Info,
-                        contentDescription = "About OTP detection",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = otpBypassEnabled,
-                    onCheckedChange = onOtpBypassChange,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
-            }
+            SmartFilterRow(
+                label = "Skip OTP notifications",
+                checked = otpBypassEnabled,
+                onCheckedChange = onOtpBypassChange,
+                onInfoClick = { showOtpInfo = true }
+            )
+            SmartFilterRow(
+                label = "Skip system notifications",
+                checked = systemFilterEnabled,
+                onCheckedChange = onSystemFilterChange,
+                onInfoClick = { showSystemInfo = true }
+            )
+            SmartFilterRow(
+                label = "Skip ongoing notifications",
+                checked = ongoingFilterEnabled,
+                onCheckedChange = onOngoingFilterChange,
+                onInfoClick = { showInstallInfo = true }
+            )
 
             HorizontalDivider()
 

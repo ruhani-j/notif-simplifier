@@ -61,6 +61,8 @@ class MainActivity : ComponentActivity() {
             }
 
             var otpBypassEnabled by remember { mutableStateOf(prefs.getBoolean("otp_bypass", true)) }
+            var systemFilterEnabled by remember { mutableStateOf(prefs.getBoolean("system_filter", true)) }
+            var ongoingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("ongoing_filter", true)) }
 
             val darkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
@@ -118,6 +120,16 @@ class MainActivity : ComponentActivity() {
                                 onOtpBypassChange = { enabled ->
                                     otpBypassEnabled = enabled
                                     prefs.edit().putBoolean("otp_bypass", enabled).apply()
+                                },
+                                systemFilterEnabled = systemFilterEnabled,
+                                onSystemFilterChange = { enabled ->
+                                    systemFilterEnabled = enabled
+                                    prefs.edit().putBoolean("system_filter", enabled).apply()
+                                },
+                                ongoingFilterEnabled = ongoingFilterEnabled,
+                                onOngoingFilterChange = { enabled ->
+                                    ongoingFilterEnabled = enabled
+                                    prefs.edit().putBoolean("ongoing_filter", enabled).apply()
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onGrantNotificationAccess = { openNotificationAccessSettings() },

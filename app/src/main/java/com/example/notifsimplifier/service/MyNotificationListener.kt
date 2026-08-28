@@ -31,10 +31,15 @@ class MyNotificationListener : NotificationListenerService() {
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
 
-        val otpBypassEnabled = applicationContext
-            .getSharedPreferences("prefs", Context.MODE_PRIVATE)
-            .getBoolean("otp_bypass", true)
-        if (otpBypassEnabled && OtpDetector.isOtp(title, text)) return
+        val prefs = applicationContext.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+
+        if (prefs.getBoolean("otp_bypass", true) && OtpDetector.isOtp(title, text)) return
+
+        if (prefs.getBoolean("system_filter", true) &&
+            SmartFilters.isSystemApp(applicationContext, packageName)) return
+
+        if (prefs.getBoolean("ongoing_filter", true) &&
+            SmartFilters.isOngoing(sbn)) return
 
         val contentIntent = sbn.notification.contentIntent
 
