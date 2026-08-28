@@ -26,18 +26,18 @@ marketing spam, and time-sensitive alerts automatically.
   filters, looks up the per-app mode from a local Room database, and either
   cancels the original notification (saving it to the DB) or lets it through.
 - `data/` — Room database (`AppDatabase`, `NotificationDao`, `NotificationEntity`,
-  `AppSettingsDao`, `AppSettingsEntity`) storing captured notifications and
+  `AppSettingDao`, `AppSettingEntity`) storing captured notifications and
   per-app modes on-device only. No network calls, no external services.
 - `ui/` — Jetpack Compose screens (see below).
 - `MainActivity.kt` — entry point; auto-adds known authenticator apps to the
-  Never Redirect list on first launch and navigates between screens.
+  Never Redirect list on each launch (no-op if already added) and navigates between screens.
 
 ## Screens
 
 | Screen | Purpose |
 |---|---|
 | **Notification list** | Scrollable list of redirected notifications (app name, timestamp, title, text), newest first. Tap a row to deep-link into the source app. Swipe left/right to dismiss. "Clear all" button. |
-| **Settings** | Global toggles: Light/Dark/System theme; smart filter switches (OTP bypass, System app filter, Ongoing filter, Important bypass, Marketing filter). Links to Manage apps, Never redirect, and system permission screens. |
+| **Settings** | Global toggles: Light/Dark/System theme; smart filter switches (OTP bypass, System app filter, Ongoing filter, Important bypass, Marketing filter); reminder notifications toggle with configurable interval. Links to Manage apps, Never redirect, and system permission screens. |
 | **Manage apps** | Every app that has ever sent a notification, with Redirect / Instant chip buttons per row. Bulk "All apps" row at the top. |
 | **Never redirect** | Alphabetical list of all installed apps with toggle switches. Toggled apps are excluded from all processing — their notifications always pass through normally. |
 | **Set filter** | Full-screen prompt shown automatically the first time a new app sends a notification. Choose Redirect or Instant. |
@@ -52,7 +52,7 @@ marketing spam, and time-sensitive alerts automatically.
 
 ## Smart filters
 
-Applied in order before the per-app mode is checked:
+Filters 1–4 run before the per-app mode is checked. Filters 5–6 are applied after:
 
 1. **Never Redirect list** — apps in this list are always passed through.
 2. **OTP bypass** (default ON) — notifications that look like one-time passwords
