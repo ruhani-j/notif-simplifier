@@ -56,7 +56,7 @@ fun AppSettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("App redirect settings", fontFamily = FontFamily.Monospace)
+                    Text("Manage apps", fontFamily = FontFamily.Monospace)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {

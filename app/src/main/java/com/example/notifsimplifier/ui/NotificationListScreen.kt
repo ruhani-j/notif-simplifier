@@ -5,11 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -42,7 +40,6 @@ import java.util.Locale
 @Composable
 fun NotificationListScreen(
     notifications: List<NotificationEntity>,
-    onOpenNotificationAccessSettings: () -> Unit,
     onClearAll: () -> Unit,
     onOpenSettings: () -> Unit,
     onNotificationClick: (NotificationEntity) -> Unit,
@@ -65,10 +62,6 @@ fun NotificationListScreen(
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
 
             Row(modifier = Modifier.padding(12.dp)) {
-                OutlinedButton(onClick = onOpenNotificationAccessSettings) {
-                    Text("Grant notification access")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
                 OutlinedButton(onClick = onClearAll) {
                     Text("Clear all")
                 }

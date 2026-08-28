@@ -1,15 +1,19 @@
 package com.example.notifsimplifier
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,6 +31,8 @@ import com.example.notifsimplifier.service.MyNotificationListener
 import com.example.notifsimplifier.ui.AppSettingsScreen
 import com.example.notifsimplifier.ui.NewAppsDialog
 import com.example.notifsimplifier.ui.NotificationListScreen
+import com.example.notifsimplifier.ui.SettingsScreen
+import com.example.notifsimplifier.ui.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,15 +45,28 @@ class MainActivity : ComponentActivity() {
         val db = AppDatabase.getInstance(applicationContext)
         val notifDao = db.notificationDao()
         val appSettingDao = db.appSettingDao()
+        val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
         setContent {
             val navController = rememberNavController()
             val notifications by notifDao.getAll().collectAsState(initial = emptyList())
 
-            // Non-null list triggers the new-apps dialog; null means no dialog.
             var newApps by remember { mutableStateOf<List<AppSettingEntity>?>(null) }
 
-            // Off-main-thread diff of installed apps vs known apps on each launch.
+            var themeMode by remember {
+                mutableStateOf(
+                    ThemeMode.valueOf(
+                        prefs.getString("theme", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
+                    )
+                )
+            }
+
+            val darkTheme = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
             LaunchedEffect(Unit) {
                 val fresh = withContext(Dispatchers.IO) {
                     val installed = getInstalledUserApps()
@@ -59,13 +78,12 @@ class MainActivity : ComponentActivity() {
                 if (fresh.isNotEmpty()) newApps = fresh
             }
 
-            MaterialTheme {
+            MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     NavHost(navController = navController, startDestination = "list") {
                         composable("list") {
                             NotificationListScreen(
                                 notifications = notifications,
-                                onOpenNotificationAccessSettings = { openNotificationAccessSettings() },
                                 onClearAll = {
                                     lifecycleScope.launch { notifDao.clearAll() }
                                     MyNotificationListener.pendingIntents.clear()
@@ -79,6 +97,18 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("settings") {
+                            SettingsScreen(
+                                themeMode = themeMode,
+                                onThemeModeChange = { mode ->
+                                    themeMode = mode
+                                    prefs.edit().putString("theme", mode.name).apply()
+                                },
+                                onManageApps = { navController.navigate("manage_apps") },
+                                onGrantNotificationAccess = { openNotificationAccessSettings() },
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("manage_apps") {
                             AppSettingsScreen(
                                 appSettingDao = appSettingDao,
                                 onNavigateBack = { navController.popBackStack() }
@@ -86,7 +116,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Overlays the nav host — AlertDialog renders above all content.
                     newApps?.let { apps ->
                         NewAppsDialog(
                             newApps = apps,
@@ -139,7 +168,6 @@ class MainActivity : ComponentActivity() {
                 MyNotificationListener.pendingIntents.remove(notifId)
             }
         }
-        // Fallback: open the app's launcher activity
         packageManager.getLaunchIntentForPackage(packageName)
             ?.let { startActivity(it) }
     }
