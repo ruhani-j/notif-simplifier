@@ -25,4 +25,7 @@ interface AppSettingDao {
 
     @Query("SELECT packageName FROM app_settings")
     suspend fun getAllKnownPackageNames(): List<String>
+
+    @Query("SELECT * FROM app_settings WHERE mode = 'UNSET'")
+    suspend fun getUnsetApps(): List<AppSettingEntity>
 }

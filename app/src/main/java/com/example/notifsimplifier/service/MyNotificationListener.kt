@@ -5,10 +5,16 @@ import android.app.PendingIntent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.example.notifsimplifier.data.AppDatabase
+import com.example.notifsimplifier.data.AppSettingEntity
 import com.example.notifsimplifier.data.NotificationEntity
+import com.example.notifsimplifier.data.NotifMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MyNotificationListener : NotificationListenerService() {
@@ -24,7 +30,6 @@ class MyNotificationListener : NotificationListenerService() {
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
 
-        // OTPs must always show normally — check before any DB lookup.
         if (OtpDetector.isOtp(title, text)) return
 
         val contentIntent = sbn.notification.contentIntent
@@ -33,30 +38,62 @@ class MyNotificationListener : NotificationListenerService() {
             val db = AppDatabase.getInstance(applicationContext)
             val settings = db.appSettingDao().getByPackage(packageName)
 
-            // App not yet in settings table → user hasn't reviewed it; let it through.
-            if (settings == null) return@launch
+            if (settings == null) {
+                val displayName = runCatching {
+                    applicationContext.packageManager
+                        .getApplicationLabel(
+                            applicationContext.packageManager.getApplicationInfo(packageName, 0)
+                        ).toString()
+                }.getOrDefault(packageName)
 
-            // Nothing is redirected until the user explicitly opts the app in.
-            if (!settings.isRedirected) return@launch
-
-            val rowId = db.notificationDao().insert(
-                NotificationEntity(
-                    appName = packageName,
-                    title = title,
-                    text = text,
-                    timestamp = System.currentTimeMillis()
+                db.appSettingDao().insertIfAbsent(
+                    AppSettingEntity(
+                        packageName = packageName,
+                        displayName = displayName,
+                        mode = NotifMode.UNSET.name
+                    )
                 )
-            )
-            if (contentIntent != null) pendingIntents[rowId] = contentIntent
-            cancelNotification(sbn.key)
+                _pendingPrompts.update { if (packageName !in it) it + packageName else it }
+                // Notification passes through normally until the user sets a mode.
+                return@launch
+            }
+
+            when (NotifMode.valueOf(settings.mode)) {
+                NotifMode.UNSET -> {
+                    // Already in DB but not yet configured — re-queue the prompt if needed.
+                    _pendingPrompts.update { if (packageName !in it) it + packageName else it }
+                }
+                NotifMode.REDIRECT -> {
+                    val rowId = db.notificationDao().insert(
+                        NotificationEntity(
+                            appName = packageName,
+                            title = title,
+                            text = text,
+                            timestamp = System.currentTimeMillis()
+                        )
+                    )
+                    if (contentIntent != null) pendingIntents[rowId] = contentIntent
+                    cancelNotification(sbn.key)
+                }
+                NotifMode.INSTANT -> Unit // show normally
+            }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
 
     companion object {
-        // In-memory store of content intents keyed by DB row ID.
-        // Survives for the process lifetime; cleared when the user clears all notifications.
         val pendingIntents = mutableMapOf<Long, PendingIntent>()
+
+        private val _pendingPrompts = MutableStateFlow<List<String>>(emptyList())
+        val pendingPrompts: StateFlow<List<String>> = _pendingPrompts.asStateFlow()
+
+        fun addPendingPrompts(packages: List<String>) {
+            _pendingPrompts.update { existing -> (existing + packages).distinct() }
+        }
+
+        fun clearPrompt(packageName: String) {
+            _pendingPrompts.update { it - packageName }
+        }
     }
 }

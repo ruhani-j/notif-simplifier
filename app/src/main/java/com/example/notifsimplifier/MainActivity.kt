@@ -26,11 +26,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.notifsimplifier.data.AppDatabase
-import com.example.notifsimplifier.data.AppSettingEntity
+import com.example.notifsimplifier.data.NotifMode
 import com.example.notifsimplifier.service.MyNotificationListener
 import com.example.notifsimplifier.ui.AppSettingsScreen
-import com.example.notifsimplifier.ui.NewAppsScreen
 import com.example.notifsimplifier.ui.NotificationListScreen
+import com.example.notifsimplifier.ui.SetFilterScreen
 import com.example.notifsimplifier.ui.SettingsScreen
 import com.example.notifsimplifier.ui.ThemeMode
 import kotlinx.coroutines.Dispatchers
@@ -50,8 +50,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val navController = rememberNavController()
             val notifications by notifDao.getAll().collectAsState(initial = emptyList())
-
-            var pendingNewApps by remember { mutableStateOf<List<AppSettingEntity>>(emptyList()) }
+            val pendingPrompts by MyNotificationListener.pendingPrompts.collectAsState()
 
             var themeMode by remember {
                 mutableStateOf(
@@ -67,17 +66,24 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
 
+            // On startup, surface any apps already in DB with mode=UNSET (e.g. after process death).
             LaunchedEffect(Unit) {
-                val fresh = withContext(Dispatchers.IO) {
-                    val installed = getInstalledUserApps()
-                    val known = appSettingDao.getAllKnownPackageNames().toSet()
-                    val diff = installed.filter { it.packageName !in known }
-                    diff.forEach { appSettingDao.insertIfAbsent(it) }
-                    diff
+                val unset = withContext(Dispatchers.IO) { appSettingDao.getUnsetApps() }
+                if (unset.isNotEmpty()) {
+                    MyNotificationListener.addPendingPrompts(unset.map { it.packageName })
                 }
-                if (fresh.isNotEmpty()) {
-                    pendingNewApps = fresh
-                    navController.navigate("new_apps")
+            }
+
+            // Navigate to set-filter prompt whenever a new pending prompt appears.
+            val firstPending = pendingPrompts.firstOrNull()
+            LaunchedEffect(firstPending) {
+                if (firstPending != null) {
+                    val current = navController.currentDestination?.route
+                    if (current?.startsWith("set_filter/") != true) {
+                        navController.navigate("set_filter/$firstPending") {
+                            launchSingleTop = true
+                        }
+                    }
                 }
             }
 
@@ -117,15 +123,27 @@ class MainActivity : ComponentActivity() {
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
-                        composable("new_apps") {
-                            NewAppsScreen(
-                                newApps = pendingNewApps,
-                                onDone = { updated ->
+                        composable("set_filter/{packageName}") { backStack ->
+                            val packageName = backStack.arguments?.getString("packageName") ?: return@composable
+                            var displayName by remember { mutableStateOf(packageName) }
+
+                            LaunchedEffect(packageName) {
+                                displayName = withContext(Dispatchers.IO) {
+                                    appSettingDao.getByPackage(packageName)?.displayName ?: packageName
+                                }
+                            }
+
+                            SetFilterScreen(
+                                displayName = displayName,
+                                onChoose = { mode ->
                                     lifecycleScope.launch {
-                                        updated.forEach { appSettingDao.update(it) }
+                                        val app = appSettingDao.getByPackage(packageName)
+                                        if (app != null) {
+                                            appSettingDao.update(app.copy(mode = mode.name))
+                                        }
+                                        MyNotificationListener.clearPrompt(packageName)
+                                        navController.popBackStack()
                                     }
-                                    pendingNewApps = emptyList()
-                                    navController.popBackStack()
                                 }
                             )
                         }
@@ -133,32 +151,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun getInstalledUserApps(): List<AppSettingEntity> {
-        val intent = Intent(Intent.ACTION_MAIN, null).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-        val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
-        } else {
-            @Suppress("DEPRECATION")
-            packageManager.queryIntentActivities(intent, 0)
-        }
-        return resolveInfos
-            .map { it.activityInfo }
-            .filter { it.packageName != "com.example.notifsimplifier" }
-            .distinctBy { it.packageName }
-            .mapNotNull { info ->
-                runCatching {
-                    AppSettingEntity(
-                        packageName = info.packageName,
-                        displayName = packageManager
-                            .getApplicationLabel(packageManager.getApplicationInfo(info.packageName, 0))
-                            .toString()
-                    )
-                }.getOrNull()
-            }
     }
 
     private fun fireNotificationIntent(notifId: Long, packageName: String) {

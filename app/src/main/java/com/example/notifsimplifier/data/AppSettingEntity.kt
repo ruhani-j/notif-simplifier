@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 data class AppSettingEntity(
     @PrimaryKey val packageName: String,
     val displayName: String,
+    val mode: String = NotifMode.UNSET.name,
+    // Legacy columns kept for DB compatibility — no longer used in app logic.
     val isRedirected: Boolean = false,
-    // Per-app override: when true, notifications always pass through even if isRedirected is true.
-    // Useful as a manual fallback for apps whose OTP format the regex misses.
     val isAlwaysShowNormally: Boolean = false
 )
