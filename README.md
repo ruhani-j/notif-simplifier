@@ -1,5 +1,19 @@
 # Notif Simplifier
 
+A minimal Android notification manager that lets you decide which apps
+should stay in the notification tray and which should be redirected
+into a clean in-app list.
+
+## Screenshots
+
+![Notification list](screenshots/notification-list.jpg)
+
+![Manage apps](screenshots/manage-apps.jpg)
+
+![Settings](screenshots/settings.jpg)
+
+## Details
+
 A minimal personal-use Android app that intercepts your system notifications and
 lets you choose, per app, whether to redirect them into a plain in-app list or
 let them through normally. Smart filters handle OTPs, ongoing media playback,
