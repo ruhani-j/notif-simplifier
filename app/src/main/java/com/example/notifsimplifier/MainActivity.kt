@@ -71,7 +71,11 @@ class MainActivity : ComponentActivity() {
                                     MyNotificationListener.pendingIntents.clear()
                                 },
                                 onOpenSettings = { navController.navigate("settings") },
-                                onNotificationClick = { notif -> fireNotificationIntent(notif.id, notif.appName) }
+                                onNotificationClick = { notif -> fireNotificationIntent(notif.id, notif.appName) },
+                                onDismissNotification = { notif ->
+                                    lifecycleScope.launch { notifDao.deleteById(notif.id) }
+                                    MyNotificationListener.pendingIntents.remove(notif.id)
+                                }
                             )
                         }
                         composable("settings") {

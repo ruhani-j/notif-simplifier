@@ -15,6 +15,9 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications ORDER BY timestamp DESC")
     fun getAll(): Flow<List<NotificationEntity>>
 
+    @Query("DELETE FROM notifications WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("DELETE FROM notifications")
     suspend fun clearAll()
 }
