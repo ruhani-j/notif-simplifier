@@ -3,10 +3,11 @@ package com.example.notifsimplifier
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.os.Parcel
 import android.os.Build
 import android.os.Bundle
+import android.os.Parcel
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,20 +27,60 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.notifsimplifier.data.AppDatabase
 import com.example.notifsimplifier.data.NotifMode
 import com.example.notifsimplifier.service.MyNotificationListener
+import com.example.notifsimplifier.service.ReminderWorker
 import com.example.notifsimplifier.ui.AppSettingsScreen
 import com.example.notifsimplifier.ui.NeverRedirectScreen
 import com.example.notifsimplifier.ui.NotificationListScreen
+import com.example.notifsimplifier.ui.ReminderInterval
 import com.example.notifsimplifier.ui.SetFilterScreen
 import com.example.notifsimplifier.ui.SettingsScreen
 import com.example.notifsimplifier.ui.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var prefs: SharedPreferences
+
+    override fun onResume() {
+        super.onResume()
+        scheduleOrCancelReminder(
+            enabled = prefs.getBoolean("reminder_enabled", false),
+            interval = prefs.getString("reminder_interval", "DAILY") ?: "DAILY",
+            customHours = prefs.getInt("reminder_custom_hours", 24)
+        )
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED &&
+            prefs.getBoolean("reminder_enabled", false)
+        ) {
+            requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 0)
+        }
+    }
+
+    private fun scheduleOrCancelReminder(enabled: Boolean, interval: String, customHours: Int) {
+        val wm = WorkManager.getInstance(this)
+        if (!enabled) {
+            wm.cancelUniqueWork(ReminderWorker.WORK_NAME)
+            return
+        }
+        val hours = when (interval) {
+            "DAILY" -> 24L
+            "WEEKLY" -> 168L
+            else -> customHours.toLong().coerceIn(1, 720)
+        }
+        val request = OneTimeWorkRequestBuilder<ReminderWorker>()
+            .setInitialDelay(hours, TimeUnit.HOURS)
+            .build()
+        wm.enqueueUniqueWork(ReminderWorker.WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +88,7 @@ class MainActivity : ComponentActivity() {
         val db = AppDatabase.getInstance(applicationContext)
         val notifDao = db.notificationDao()
         val appSettingDao = db.appSettingDao()
-        val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
+        prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
         setContent {
             val navController = rememberNavController()
@@ -67,6 +108,15 @@ class MainActivity : ComponentActivity() {
             var ongoingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("ongoing_filter", true)) }
             var importantBypassEnabled by remember { mutableStateOf(prefs.getBoolean("important_bypass", true)) }
             var marketingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("marketing_filter", false)) }
+            var reminderEnabled by remember { mutableStateOf(prefs.getBoolean("reminder_enabled", false)) }
+            var reminderInterval by remember {
+                mutableStateOf(
+                    runCatching {
+                        ReminderInterval.valueOf(prefs.getString("reminder_interval", "DAILY") ?: "DAILY")
+                    }.getOrDefault(ReminderInterval.DAILY)
+                )
+            }
+            var reminderCustomHours by remember { mutableStateOf(prefs.getInt("reminder_custom_hours", 24)) }
             var neverRedirectPackages by remember {
                 mutableStateOf(prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet())
             }
@@ -180,6 +230,33 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onNeverRedirect = { navController.navigate("never_redirect") },
+                                reminderEnabled = reminderEnabled,
+                                onReminderEnabledChange = { enabled ->
+                                    reminderEnabled = enabled
+                                    prefs.edit().putBoolean("reminder_enabled", enabled).apply()
+                                    scheduleOrCancelReminder(enabled, reminderInterval.name, reminderCustomHours)
+                                    if (enabled && Build.VERSION.SDK_INT >= 33 &&
+                                        checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 0)
+                                    }
+                                },
+                                reminderInterval = reminderInterval,
+                                onReminderIntervalChange = { interval ->
+                                    reminderInterval = interval
+                                    prefs.edit().putString("reminder_interval", interval.name).apply()
+                                    if (reminderEnabled) {
+                                        scheduleOrCancelReminder(true, interval.name, reminderCustomHours)
+                                    }
+                                },
+                                reminderCustomHours = reminderCustomHours,
+                                onReminderCustomHoursChange = { hours ->
+                                    reminderCustomHours = hours
+                                    prefs.edit().putInt("reminder_custom_hours", hours).apply()
+                                    if (reminderEnabled && reminderInterval == ReminderInterval.CUSTOM) {
+                                        scheduleOrCancelReminder(true, "CUSTOM", hours)
+                                    }
+                                },
                                 onGrantNotificationAccess = { openNotificationAccessSettings() },
                                 onOpenAppNotificationSettings = { openAppNotificationSettings() },
                                 onNavigateBack = { navController.popBackStack() }

@@ -2,7 +2,9 @@ package com.example.notifsimplifier.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +20,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -34,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -87,6 +91,12 @@ fun SettingsScreen(
     onMarketingFilterChange: (Boolean) -> Unit,
     onManageApps: () -> Unit,
     onNeverRedirect: () -> Unit,
+    reminderEnabled: Boolean,
+    onReminderEnabledChange: (Boolean) -> Unit,
+    reminderInterval: ReminderInterval,
+    onReminderIntervalChange: (ReminderInterval) -> Unit,
+    reminderCustomHours: Int,
+    onReminderCustomHoursChange: (Int) -> Unit,
     onGrantNotificationAccess: () -> Unit,
     onOpenAppNotificationSettings: () -> Unit,
     onNavigateBack: () -> Unit
@@ -348,6 +358,95 @@ fun SettingsScreen(
                 )
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            HorizontalDivider()
+
+            Text(
+                text = "REMINDERS",
+                fontFamily = FontFamily.Default,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Remind me to check",
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = reminderEnabled,
+                    onCheckedChange = onReminderEnabledChange
+                )
+            }
+
+            if (reminderEnabled) {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp)
+                ) {
+                    ReminderInterval.entries.forEachIndexed { index, interval ->
+                        SegmentedButton(
+                            selected = reminderInterval == interval,
+                            onClick = { onReminderIntervalChange(interval) },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ReminderInterval.entries.size),
+                            label = {
+                                Text(
+                                    text = interval.name.lowercase().replaceFirstChar { it.uppercase() },
+                                    fontFamily = FontFamily.Default
+                                )
+                            }
+                        )
+                    }
+                }
+
+                if (reminderInterval == ReminderInterval.CUSTOM) {
+                    var customHoursText by remember(reminderCustomHours) {
+                        mutableStateOf(reminderCustomHours.toString())
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Every",
+                            fontFamily = FontFamily.Default,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = customHoursText,
+                            onValueChange = { text ->
+                                val digits = text.filter { it.isDigit() }.take(3)
+                                customHoursText = digits
+                                val hours = digits.toIntOrNull()?.coerceIn(1, 720)
+                                if (hours != null) onReminderCustomHoursChange(hours)
+                            },
+                            label = { Text("Hours", fontFamily = FontFamily.Default) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.width(100.dp)
+                        )
+                        Text(
+                            text = "hours without opening",
+                            fontFamily = FontFamily.Default,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
             }
 
             HorizontalDivider()

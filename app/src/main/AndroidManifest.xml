@@ -3,6 +3,9 @@
     package="com.example.notifsimplifier">
 
     <!-- Needed on Android 11+ (API 30+) to see all launchable apps via queryIntentActivities -->
+    <!-- Required on Android 13+ to post reminder notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
