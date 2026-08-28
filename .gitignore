@@ -10,3 +10,11 @@
 .cxx
 *.apk
 *.keystore
+
+# Secrets — never commit these
+.env
+*.env.local
+google-services.json
+
+# Release signing config if ever added
+keystore.properties
