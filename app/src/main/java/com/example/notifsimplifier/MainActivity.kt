@@ -180,6 +180,7 @@ class MainActivity : ComponentActivity() {
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onNeverRedirect = { navController.navigate("never_redirect") },
                                 onGrantNotificationAccess = { openNotificationAccessSettings() },
+                                onOpenAppNotificationSettings = { openAppNotificationSettings() },
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
@@ -247,5 +248,9 @@ class MainActivity : ComponentActivity() {
 
     private fun openNotificationAccessSettings() {
         startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+    }
+
+    private fun openAppNotificationSettings() {
+        startActivity(Intent(android.provider.Settings.ACTION_ALL_APPS_NOTIFICATION_SETTINGS))
     }
 }

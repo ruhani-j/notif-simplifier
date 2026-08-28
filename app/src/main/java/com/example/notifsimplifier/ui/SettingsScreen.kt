@@ -86,6 +86,7 @@ fun SettingsScreen(
     onManageApps: () -> Unit,
     onNeverRedirect: () -> Unit,
     onGrantNotificationAccess: () -> Unit,
+    onOpenAppNotificationSettings: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     var showOtpInfo by remember { mutableStateOf(false) }
@@ -365,6 +366,28 @@ fun SettingsScreen(
             ) {
                 Text(
                     text = "Grant notification access",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenAppNotificationSettings() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "App notification settings",
                     fontFamily = FontFamily.Monospace,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
