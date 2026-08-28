@@ -2,6 +2,7 @@ package com.example.notifsimplifier.service
 
 import android.app.Notification
 import android.app.PendingIntent
+import android.content.Context
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.example.notifsimplifier.data.AppDatabase
@@ -30,7 +31,10 @@ class MyNotificationListener : NotificationListenerService() {
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
 
-        if (OtpDetector.isOtp(title, text)) return
+        val otpBypassEnabled = applicationContext
+            .getSharedPreferences("prefs", Context.MODE_PRIVATE)
+            .getBoolean("otp_bypass", true)
+        if (otpBypassEnabled && OtpDetector.isOtp(title, text)) return
 
         val contentIntent = sbn.notification.contentIntent
 

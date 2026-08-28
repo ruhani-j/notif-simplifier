@@ -60,6 +60,8 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            var otpBypassEnabled by remember { mutableStateOf(prefs.getBoolean("otp_bypass", true)) }
+
             val darkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
@@ -111,6 +113,11 @@ class MainActivity : ComponentActivity() {
                                 onThemeModeChange = { mode ->
                                     themeMode = mode
                                     prefs.edit().putString("theme", mode.name).apply()
+                                },
+                                otpBypassEnabled = otpBypassEnabled,
+                                onOtpBypassChange = { enabled ->
+                                    otpBypassEnabled = enabled
+                                    prefs.edit().putBoolean("otp_bypass", enabled).apply()
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onGrantNotificationAccess = { openNotificationAccessSettings() },
