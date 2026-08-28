@@ -1,8 +1,8 @@
 package com.example.notifsimplifier.service
 
 import android.app.Notification
-import android.service.notification.StatusBarNotification
 import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
 import com.example.notifsimplifier.data.AppDatabase
 import com.example.notifsimplifier.data.NotificationEntity
 import kotlinx.coroutines.CoroutineScope
@@ -14,42 +14,42 @@ class MyNotificationListener : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Add package names here to skip capturing them (e.g. your own app,
-    // or ongoing/ silent notifications you never want logged).
-    private val ignoredPackages = setOf(
-        "com.example.notifsimplifier"
-    )
-
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val packageName = sbn.packageName
-        if (packageName in ignoredPackages) return
+        if (packageName == "com.example.notifsimplifier") return
 
-        val notification = sbn.notification
-        val extras = notification.extras
-
+        val extras = sbn.notification.extras
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
-
-        // Skip empty/ongoing notifications (foreground service notifications, etc.)
         if (title.isBlank() && text.isBlank()) return
 
-        val entity = NotificationEntity(
-            appName = packageName,
-            title = title,
-            text = text,
-            timestamp = System.currentTimeMillis()
-        )
+        // OTPs must always show normally — check before any DB lookup.
+        if (OtpDetector.isOtp(title, text)) return
 
         scope.launch {
-            AppDatabase.getInstance(applicationContext).notificationDao().insert(entity)
+            val db = AppDatabase.getInstance(applicationContext)
+            val settings = db.appSettingDao().getByPackage(packageName)
+
+            // App not yet in settings table → user hasn't reviewed it; let it through.
+            if (settings == null) return@launch
+
+            // Per-app override: user marked this app to always show normally.
+            if (settings.isAlwaysShowNormally) return@launch
+
+            // Nothing is redirected until the user explicitly opts the app in.
+            if (!settings.isRedirected) return@launch
+
+            db.notificationDao().insert(
+                NotificationEntity(
+                    appName = packageName,
+                    title = title,
+                    text = text,
+                    timestamp = System.currentTimeMillis()
+                )
+            )
+            cancelNotification(sbn.key)
         }
-
-        // Cancel the original so it never shows a banner/badge/sound on the
-        // system UI — this is the main lever for reducing dopamine hits.
-        cancelNotification(sbn.key)
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // No-op: we already stored our own copy when it was posted.
-    }
+    override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
 }
