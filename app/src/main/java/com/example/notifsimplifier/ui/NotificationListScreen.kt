@@ -70,7 +70,7 @@ fun NotificationListScreen(
 
             if (notifications.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Nothing here yet.", fontFamily = FontFamily.Monospace)
+                    Text("Nothing here yet.", fontFamily = FontFamily.Default)
                 }
             } else {
                 LazyColumn {
@@ -119,20 +119,20 @@ fun NotificationListScreen(
                             ) {
                                 Text(
                                     text = "$appLabel  ·  ${dateFormat.format(Date(item.timestamp))}",
-                                    fontFamily = FontFamily.Monospace,
+                                    fontFamily = FontFamily.Default,
                                     style = MaterialTheme.typography.labelSmall
                                 )
                                 if (item.title.isNotBlank()) {
                                     Text(
                                         text = item.title,
-                                        fontFamily = FontFamily.Monospace,
+                                        fontFamily = FontFamily.Default,
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 }
                                 if (item.text.isNotBlank()) {
                                     Text(
                                         text = item.text,
-                                        fontFamily = FontFamily.Monospace,
+                                        fontFamily = FontFamily.Default,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }

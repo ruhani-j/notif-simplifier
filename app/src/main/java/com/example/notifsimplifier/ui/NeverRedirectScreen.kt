@@ -63,7 +63,7 @@ fun NeverRedirectScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Never redirect", fontFamily = FontFamily.Monospace) },
+                title = { Text("Never redirect", fontFamily = FontFamily.Default) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -77,7 +77,7 @@ fun NeverRedirectScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Loading apps…", fontFamily = FontFamily.Monospace)
+                Text("Loading apps…", fontFamily = FontFamily.Default)
             }
         } else {
             LazyColumn(modifier = Modifier.padding(padding)) {
@@ -92,7 +92,7 @@ fun NeverRedirectScreen(
                         Spacer(Modifier.width(12.dp))
                         Text(
                             text = app.displayName,
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = FontFamily.Default,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )

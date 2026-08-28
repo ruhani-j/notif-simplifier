@@ -39,7 +39,7 @@ fun SetFilterScreen(
             Text(
                 text = "Set filter for notifications from",
                 color = Color.Gray,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FontFamily.Default,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
             )
@@ -47,7 +47,7 @@ fun SetFilterScreen(
             Text(
                 text = displayName,
                 color = Color.White,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FontFamily.Default,
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
@@ -58,14 +58,14 @@ fun SetFilterScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color.White)
                 ) {
-                    Text("Redirect", fontFamily = FontFamily.Monospace)
+                    Text("Redirect", fontFamily = FontFamily.Default)
                 }
                 OutlinedButton(
                     onClick = { onChoose(NotifMode.INSTANT) },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color.White)
                 ) {
-                    Text("Instant", fontFamily = FontFamily.Monospace)
+                    Text("Instant", fontFamily = FontFamily.Default)
                 }
             }
         }

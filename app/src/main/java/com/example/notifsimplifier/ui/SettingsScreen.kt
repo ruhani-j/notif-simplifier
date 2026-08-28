@@ -49,7 +49,7 @@ private fun SmartFilterRow(
     ) {
         Text(
             text = label,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FontFamily.Default,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f)
         )
@@ -98,7 +98,7 @@ fun SettingsScreen(
     if (showOtpInfo) {
         AlertDialog(
             onDismissRequest = { showOtpInfo = false },
-            title = { Text("Skip OTP notifications", fontFamily = FontFamily.Monospace) },
+            title = { Text("Skip OTP notifications", fontFamily = FontFamily.Default) },
             text = {
                 Text(
                     text = "When enabled, notifications that look like one-time passwords or " +
@@ -107,13 +107,13 @@ fun SettingsScreen(
                         "Detection looks for keywords like \"OTP\", \"verification code\", " +
                         "\"security code\", \"passcode\" combined with a 4–8 digit number. " +
                         "This covers most SMS and app-based 2FA messages.",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodySmall
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showOtpInfo = false }) {
-                    Text("Got it", fontFamily = FontFamily.Monospace)
+                    Text("Got it", fontFamily = FontFamily.Default)
                 }
             }
         )
@@ -122,7 +122,7 @@ fun SettingsScreen(
     if (showImportantInfo) {
         AlertDialog(
             onDismissRequest = { showImportantInfo = false },
-            title = { Text("Always show important updates", fontFamily = FontFamily.Monospace) },
+            title = { Text("Always show important updates", fontFamily = FontFamily.Default) },
             text = {
                 Text(
                     text = "When enabled, notifications from apps set to Redirect are shown " +
@@ -132,13 +132,13 @@ fun SettingsScreen(
                         "transaction), account security alerts (new sign-in, suspicious activity), " +
                         "and appointments or bookings.\n\n" +
                         "Everything else from those apps still gets redirected to the list.",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodySmall
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showImportantInfo = false }) {
-                    Text("Got it", fontFamily = FontFamily.Monospace)
+                    Text("Got it", fontFamily = FontFamily.Default)
                 }
             }
         )
@@ -147,7 +147,7 @@ fun SettingsScreen(
     if (showSystemInfo) {
         AlertDialog(
             onDismissRequest = { showSystemInfo = false },
-            title = { Text("Skip system notifications", fontFamily = FontFamily.Monospace) },
+            title = { Text("Skip system notifications", fontFamily = FontFamily.Default) },
             text = {
                 Text(
                     text = "When enabled, notifications from Android system apps — such as " +
@@ -155,13 +155,13 @@ fun SettingsScreen(
                         "— are never redirected.\n\n" +
                         "Turn this off only if you specifically want to capture system-level " +
                         "notifications in the list.",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodySmall
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showSystemInfo = false }) {
-                    Text("Got it", fontFamily = FontFamily.Monospace)
+                    Text("Got it", fontFamily = FontFamily.Default)
                 }
             }
         )
@@ -170,7 +170,7 @@ fun SettingsScreen(
     if (showMarketingInfo) {
         AlertDialog(
             onDismissRequest = { showMarketingInfo = false },
-            title = { Text("Redirect marketing spam", fontFamily = FontFamily.Monospace) },
+            title = { Text("Redirect marketing spam", fontFamily = FontFamily.Default) },
             text = {
                 Text(
                     text = "When enabled, promotional notifications from apps set to Instant are " +
@@ -180,13 +180,13 @@ fun SettingsScreen(
                         "confirmed, etc.) are never caught — transactional content always takes " +
                         "priority.\n\n" +
                         "Only applies to apps set to Instant. Redirect apps are already captured.",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodySmall
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showMarketingInfo = false }) {
-                    Text("Got it", fontFamily = FontFamily.Monospace)
+                    Text("Got it", fontFamily = FontFamily.Default)
                 }
             }
         )
@@ -195,7 +195,7 @@ fun SettingsScreen(
     if (showInstallInfo) {
         AlertDialog(
             onDismissRequest = { showInstallInfo = false },
-            title = { Text("Skip ongoing notifications", fontFamily = FontFamily.Monospace) },
+            title = { Text("Skip ongoing notifications", fontFamily = FontFamily.Default) },
             text = {
                 Text(
                     text = "When enabled, persistent status notifications are never redirected. " +
@@ -203,13 +203,13 @@ fun SettingsScreen(
                         "app downloads and installs, VPN and hotspot indicators, active calls, " +
                         "and screen recording — anything designed to stay visible continuously " +
                         "rather than as a one-time message.",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodySmall
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showInstallInfo = false }) {
-                    Text("Got it", fontFamily = FontFamily.Monospace)
+                    Text("Got it", fontFamily = FontFamily.Default)
                 }
             }
         )
@@ -218,7 +218,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontFamily = FontFamily.Monospace) },
+                title = { Text("Settings", fontFamily = FontFamily.Default) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -234,7 +234,7 @@ fun SettingsScreen(
         ) {
             Text(
                 text = "APPEARANCE",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FontFamily.Default,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
@@ -253,7 +253,7 @@ fun SettingsScreen(
                         label = {
                             Text(
                                 text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Default
                             )
                         }
                     )
@@ -264,7 +264,7 @@ fun SettingsScreen(
 
             Text(
                 text = "SMART FILTERS",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FontFamily.Default,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
@@ -305,7 +305,7 @@ fun SettingsScreen(
 
             Text(
                 text = "APPS",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FontFamily.Default,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
@@ -320,7 +320,7 @@ fun SettingsScreen(
             ) {
                 Text(
                     text = "Manage apps",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
@@ -339,7 +339,7 @@ fun SettingsScreen(
             ) {
                 Text(
                     text = "Never redirect",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
@@ -351,7 +351,7 @@ fun SettingsScreen(
 
             Text(
                 text = "PERMISSIONS",
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FontFamily.Default,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
@@ -366,7 +366,7 @@ fun SettingsScreen(
             ) {
                 Text(
                     text = "Grant notification access",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
@@ -388,7 +388,7 @@ fun SettingsScreen(
             ) {
                 Text(
                     text = "App notification settings",
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )

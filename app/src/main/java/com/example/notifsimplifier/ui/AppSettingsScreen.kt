@@ -62,7 +62,7 @@ fun AppSettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Manage apps", fontFamily = FontFamily.Monospace, color = TEXT)
+                    Text("Manage apps", fontFamily = FontFamily.Default, color = TEXT)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -84,7 +84,7 @@ fun AppSettingsScreen(
                 Text(
                     text = "No apps yet.\nNotifications from apps will appear here as they arrive.",
                     color = MUTED,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -141,7 +141,7 @@ private fun AppModeRow(
         Text(
             text = name,
             color = TEXT,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FontFamily.Default,
             fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f)
@@ -176,7 +176,7 @@ private fun ModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
         Text(
             text = label,
             color = if (selected) Color.Black else MUTED,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FontFamily.Default,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             style = MaterialTheme.typography.labelSmall
         )
