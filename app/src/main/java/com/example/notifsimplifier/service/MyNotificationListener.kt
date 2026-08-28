@@ -76,6 +76,10 @@ class MyNotificationListener : NotificationListenerService() {
                     _pendingPrompts.update { if (packageName !in it) it + packageName else it }
                 }
                 NotifMode.REDIRECT -> {
+                    val importantBypassEnabled = prefs.getBoolean("important_bypass", true)
+                    if (importantBypassEnabled && ImportantDetector.isImportant(title, text)) {
+                        return@launch // show normally
+                    }
                     val rowId = db.notificationDao().insert(
                         NotificationEntity(
                             appName = packageName,

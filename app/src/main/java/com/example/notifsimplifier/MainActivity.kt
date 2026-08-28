@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
             var otpBypassEnabled by remember { mutableStateOf(prefs.getBoolean("otp_bypass", true)) }
             var systemFilterEnabled by remember { mutableStateOf(prefs.getBoolean("system_filter", true)) }
             var ongoingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("ongoing_filter", true)) }
+            var importantBypassEnabled by remember { mutableStateOf(prefs.getBoolean("important_bypass", true)) }
             var marketingFilterEnabled by remember { mutableStateOf(prefs.getBoolean("marketing_filter", false)) }
             var neverRedirectPackages by remember {
                 mutableStateOf(prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet())
@@ -75,11 +76,41 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
 
-            // On startup, surface any apps already in DB with mode=UNSET (e.g. after process death).
             LaunchedEffect(Unit) {
+                // Surface any apps already in DB with mode=UNSET (e.g. after process death).
                 val unset = withContext(Dispatchers.IO) { appSettingDao.getUnsetApps() }
                 if (unset.isNotEmpty()) {
                     MyNotificationListener.addPendingPrompts(unset.map { it.packageName })
+                }
+
+                // Auto-add known authenticator / 2FA apps to Never Redirect.
+                val knownAuthenticators = listOf(
+                    "com.google.android.apps.authenticator2", // Google Authenticator
+                    "com.duosecurity.duomobile",              // Duo Mobile
+                    "com.microsoft.authenticator",            // Microsoft Authenticator
+                    "com.authy.authy",                        // Authy
+                    "com.lastpass.authenticator",             // LastPass Authenticator
+                    "org.fedorahosted.freeotp",               // FreeOTP
+                    "org.fedorahosted.freeotp2",              // FreeOTP+
+                    "com.aegisvault.aegis",                   // Aegis
+                    "com.bitwarden.mobile",                   // Bitwarden
+                    "com.yubico.yubioath",                    // Yubico Authenticator
+                    "com.onelogin.mobileotp",                 // OneLogin
+                    "com.okta.android.auth",                  // Okta Verify
+                    "com.azure.authenticator",                // Azure Authenticator (alt pkg)
+                )
+                val installed = withContext(Dispatchers.IO) {
+                    knownAuthenticators.filter { pkg ->
+                        runCatching { packageManager.getPackageInfo(pkg, 0); true }.getOrDefault(false)
+                    }
+                }
+                if (installed.isNotEmpty()) {
+                    val current = prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet()
+                    val updated = current + installed
+                    if (updated != current) {
+                        prefs.edit().putStringSet("never_redirect_packages", updated).apply()
+                        neverRedirectPackages = updated
+                    }
                 }
             }
 
@@ -125,6 +156,11 @@ class MainActivity : ComponentActivity() {
                                 onOtpBypassChange = { enabled ->
                                     otpBypassEnabled = enabled
                                     prefs.edit().putBoolean("otp_bypass", enabled).apply()
+                                },
+                                importantBypassEnabled = importantBypassEnabled,
+                                onImportantBypassChange = { enabled ->
+                                    importantBypassEnabled = enabled
+                                    prefs.edit().putBoolean("important_bypass", enabled).apply()
                                 },
                                 systemFilterEnabled = systemFilterEnabled,
                                 onSystemFilterChange = { enabled ->

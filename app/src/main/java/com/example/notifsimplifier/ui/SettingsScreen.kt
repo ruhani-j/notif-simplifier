@@ -75,6 +75,8 @@ fun SettingsScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     otpBypassEnabled: Boolean,
     onOtpBypassChange: (Boolean) -> Unit,
+    importantBypassEnabled: Boolean,
+    onImportantBypassChange: (Boolean) -> Unit,
     systemFilterEnabled: Boolean,
     onSystemFilterChange: (Boolean) -> Unit,
     ongoingFilterEnabled: Boolean,
@@ -87,6 +89,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     var showOtpInfo by remember { mutableStateOf(false) }
+    var showImportantInfo by remember { mutableStateOf(false) }
     var showSystemInfo by remember { mutableStateOf(false) }
     var showInstallInfo by remember { mutableStateOf(false) }
     var showMarketingInfo by remember { mutableStateOf(false) }
@@ -109,6 +112,31 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showOtpInfo = false }) {
+                    Text("Got it", fontFamily = FontFamily.Monospace)
+                }
+            }
+        )
+    }
+
+    if (showImportantInfo) {
+        AlertDialog(
+            onDismissRequest = { showImportantInfo = false },
+            title = { Text("Always show important updates", fontFamily = FontFamily.Monospace) },
+            text = {
+                Text(
+                    text = "When enabled, notifications from apps set to Redirect are shown " +
+                        "normally if they look time-sensitive or safety-critical.\n\n" +
+                        "This covers: delivery & ride-sharing updates (driver arriving, order " +
+                        "confirmed, out for delivery), financial alerts (payment, refund, " +
+                        "transaction), account security alerts (new sign-in, suspicious activity), " +
+                        "and appointments or bookings.\n\n" +
+                        "Everything else from those apps still gets redirected to the list.",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showImportantInfo = false }) {
                     Text("Got it", fontFamily = FontFamily.Monospace)
                 }
             }
@@ -246,6 +274,12 @@ fun SettingsScreen(
                 checked = otpBypassEnabled,
                 onCheckedChange = onOtpBypassChange,
                 onInfoClick = { showOtpInfo = true }
+            )
+            SmartFilterRow(
+                label = "Always show important updates",
+                checked = importantBypassEnabled,
+                onCheckedChange = onImportantBypassChange,
+                onInfoClick = { showImportantInfo = true }
             )
             SmartFilterRow(
                 label = "Skip system notifications",
