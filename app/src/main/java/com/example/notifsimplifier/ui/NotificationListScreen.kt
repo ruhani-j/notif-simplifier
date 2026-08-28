@@ -28,6 +28,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -74,6 +75,14 @@ fun NotificationListScreen(
             } else {
                 LazyColumn {
                     items(notifications, key = { it.id }) { item ->
+                        val context = LocalContext.current
+                        val appLabel = remember(item.appName) {
+                            runCatching {
+                                context.packageManager.getApplicationLabel(
+                                    context.packageManager.getApplicationInfo(item.appName, 0)
+                                ).toString()
+                            }.getOrDefault(item.appName)
+                        }
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value ->
                                 if (value != SwipeToDismissBoxValue.Settled) {
@@ -109,7 +118,7 @@ fun NotificationListScreen(
                                     .padding(horizontal = 16.dp, vertical = 10.dp)
                             ) {
                                 Text(
-                                    text = "${item.appName}  ·  ${dateFormat.format(Date(item.timestamp))}",
+                                    text = "$appLabel  ·  ${dateFormat.format(Date(item.timestamp))}",
                                     fontFamily = FontFamily.Monospace,
                                     style = MaterialTheme.typography.labelSmall
                                 )
