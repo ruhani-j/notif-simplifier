@@ -29,7 +29,7 @@ import com.example.notifsimplifier.data.AppDatabase
 import com.example.notifsimplifier.data.AppSettingEntity
 import com.example.notifsimplifier.service.MyNotificationListener
 import com.example.notifsimplifier.ui.AppSettingsScreen
-import com.example.notifsimplifier.ui.NewAppsDialog
+import com.example.notifsimplifier.ui.NewAppsScreen
 import com.example.notifsimplifier.ui.NotificationListScreen
 import com.example.notifsimplifier.ui.SettingsScreen
 import com.example.notifsimplifier.ui.ThemeMode
@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val notifications by notifDao.getAll().collectAsState(initial = emptyList())
 
-            var newApps by remember { mutableStateOf<List<AppSettingEntity>?>(null) }
+            var pendingNewApps by remember { mutableStateOf<List<AppSettingEntity>>(emptyList()) }
 
             var themeMode by remember {
                 mutableStateOf(
@@ -75,7 +75,10 @@ class MainActivity : ComponentActivity() {
                     diff.forEach { appSettingDao.insertIfAbsent(it) }
                     diff
                 }
-                if (fresh.isNotEmpty()) newApps = fresh
+                if (fresh.isNotEmpty()) {
+                    pendingNewApps = fresh
+                    navController.navigate("new_apps")
+                }
             }
 
             MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
@@ -114,18 +117,18 @@ class MainActivity : ComponentActivity() {
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
-                    }
-
-                    newApps?.let { apps ->
-                        NewAppsDialog(
-                            newApps = apps,
-                            onDismiss = { updated ->
-                                lifecycleScope.launch {
-                                    updated.forEach { appSettingDao.update(it) }
+                        composable("new_apps") {
+                            NewAppsScreen(
+                                newApps = pendingNewApps,
+                                onDone = { updated ->
+                                    lifecycleScope.launch {
+                                        updated.forEach { appSettingDao.update(it) }
+                                    }
+                                    pendingNewApps = emptyList()
+                                    navController.popBackStack()
                                 }
-                                newApps = null
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
