@@ -36,9 +36,6 @@ class MyNotificationListener : NotificationListenerService() {
             // App not yet in settings table → user hasn't reviewed it; let it through.
             if (settings == null) return@launch
 
-            // Per-app override: user marked this app to always show normally.
-            if (settings.isAlwaysShowNormally) return@launch
-
             // Nothing is redirected until the user explicitly opts the app in.
             if (!settings.isRedirected) return@launch
 

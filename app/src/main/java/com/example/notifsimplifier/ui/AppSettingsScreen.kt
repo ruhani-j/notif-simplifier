@@ -130,22 +130,6 @@ private fun AppSettingRow(
                 onCheckedChange = { onUpdate(app.copy(isRedirected = it)) }
             )
         }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Always show normally (OTP fallback)",
-                fontFamily = FontFamily.Monospace,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(
-                checked = app.isAlwaysShowNormally,
-                onCheckedChange = { onUpdate(app.copy(isAlwaysShowNormally = it)) }
-            )
-        }
     }
 }
 
