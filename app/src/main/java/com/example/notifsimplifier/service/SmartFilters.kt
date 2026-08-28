@@ -21,6 +21,8 @@ object SmartFilters {
         val isOngoingFlag = (flags and Notification.FLAG_ONGOING_EVENT) != 0
         val hasProgressBar = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 0) > 0
         val isIndeterminate = extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false)
-        return isOngoingFlag || hasProgressBar || isIndeterminate
+        // MediaStyle notifications (Spotify, music apps) may not set FLAG_ONGOING_EVENT
+        val isMediaStyle = extras.getString(Notification.EXTRA_TEMPLATE) == "android.app.Notification\$MediaStyle"
+        return isOngoingFlag || hasProgressBar || isIndeterminate || isMediaStyle
     }
 }
