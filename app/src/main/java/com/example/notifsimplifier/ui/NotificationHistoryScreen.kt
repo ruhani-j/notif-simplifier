@@ -74,7 +74,7 @@ fun NotificationHistoryScreen(
             if (notifications.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "No history yet.\nEnable \"Save to history\" on an Instant app to start collecting.",
+                        text = "No history yet.\nEnable \"Save to history\" for any app in History Apps to start collecting.",
                         fontFamily = FontFamily.Default,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -217,7 +217,7 @@ class MainActivity : ComponentActivity() {
                             NotificationListScreen(
                                 notifications = notifications,
                                 onClearAll = {
-                                    lifecycleScope.launch { notifDao.clearAll() }
+                                    lifecycleScope.launch { notifDao.clearRedirect() }
                                     MyNotificationListener.pendingIntents.clear()
                                 },
                                 onOpenSettings = { navController.navigate("settings") },

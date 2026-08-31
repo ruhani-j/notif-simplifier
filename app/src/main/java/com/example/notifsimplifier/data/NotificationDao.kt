@@ -22,6 +22,9 @@ interface NotificationDao {
     @Query("DELETE FROM notifications WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM notifications WHERE source = 'REDIRECT'")
+    suspend fun clearRedirect()
+
     @Query("DELETE FROM notifications")
     suspend fun clearAll()
 
