@@ -14,10 +14,6 @@ import com.example.notifsimplifier.data.NotifMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MyNotificationListener : NotificationListenerService() {
@@ -80,7 +76,9 @@ class MyNotificationListener : NotificationListenerService() {
                 NotifMode.UNSET -> {
                     if (prefs.getBoolean("system_filter", true) &&
                         SmartFilters.isSystemApp(applicationContext, packageName)) return@launch
-                    _pendingPrompts.update { if (packageName !in it) it + packageName else it }
+                    val defaultModeStr = prefs.getString("new_app_default", NotifMode.REDIRECT.name) ?: NotifMode.REDIRECT.name
+                    val resolvedMode = runCatching { NotifMode.valueOf(defaultModeStr) }.getOrDefault(NotifMode.REDIRECT)
+                    if (settings != null) db.appSettingDao().update(settings.copy(mode = resolvedMode.name))
                 }
                 NotifMode.REDIRECT -> {
                     val importantBypassEnabled = prefs.getBoolean("important_bypass", true)
@@ -100,6 +98,19 @@ class MyNotificationListener : NotificationListenerService() {
                     )
                     if (contentIntent != null) pendingIntents[rowId] = contentIntent
                     cancelNotification(sbn.key)
+                    if (settings?.collectHistory == true) {
+                        db.notificationDao().insert(
+                            NotificationEntity(
+                                appName = packageName,
+                                title = title,
+                                text = text,
+                                timestamp = System.currentTimeMillis(),
+                                intentBytes = contentIntent?.let { marshallIntent(it) },
+                                source = "COLLECT",
+                                expiresAt = computeCollectExpiresAt(settings, prefs)
+                            )
+                        )
+                    }
                 }
                 NotifMode.INSTANT -> {
                     // Marketing filter takes priority — redirect spam even from Instant apps.
@@ -131,7 +142,7 @@ class MyNotificationListener : NotificationListenerService() {
                                 timestamp = System.currentTimeMillis(),
                                 intentBytes = contentIntent?.let { marshallIntent(it) },
                                 source = "COLLECT",
-                                expiresAt = computeExpiresAt(prefs)
+                                expiresAt = computeCollectExpiresAt(settings, prefs)
                             )
                         )
                         if (contentIntent != null) pendingIntents[rowId] = contentIntent
@@ -150,6 +161,13 @@ class MyNotificationListener : NotificationListenerService() {
                else System.currentTimeMillis() + hours * 60L * 60L * 1000L
     }
 
+    private fun computeCollectExpiresAt(settings: AppSettingEntity, prefs: SharedPreferences): Long {
+        val hours = if (settings.historyTtlHours == -2) prefs.getInt("history_ttl_hours", 24)
+                    else settings.historyTtlHours
+        return if (hours == -1) 0L
+               else System.currentTimeMillis() + hours * 60L * 60L * 1000L
+    }
+
     private fun marshallIntent(pi: PendingIntent): ByteArray? {
         return try {
             val parcel = Parcel.obtain()
@@ -162,16 +180,5 @@ class MyNotificationListener : NotificationListenerService() {
 
     companion object {
         val pendingIntents = mutableMapOf<Long, PendingIntent>()
-
-        private val _pendingPrompts = MutableStateFlow<List<String>>(emptyList())
-        val pendingPrompts: StateFlow<List<String>> = _pendingPrompts.asStateFlow()
-
-        fun addPendingPrompts(packages: List<String>) {
-            _pendingPrompts.update { existing -> (existing + packages).distinct() }
-        }
-
-        fun clearPrompt(packageName: String) {
-            _pendingPrompts.update { it - packageName }
-        }
     }
 }
