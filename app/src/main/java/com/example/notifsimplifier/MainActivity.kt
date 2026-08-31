@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,6 +38,7 @@ import com.example.notifsimplifier.service.ReminderWorker
 import com.example.notifsimplifier.ui.AppSettingsScreen
 import com.example.notifsimplifier.ui.NeverRedirectScreen
 import com.example.notifsimplifier.ui.NotificationListScreen
+import com.example.notifsimplifier.ui.PermissionScreen
 import com.example.notifsimplifier.ui.ReminderInterval
 import com.example.notifsimplifier.ui.SetFilterScreen
 import com.example.notifsimplifier.ui.SettingsScreen
@@ -49,9 +51,14 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var prefs: SharedPreferences
+    private val hasListenerPermission = mutableStateOf(false)
+
+    private fun isListenerEnabled() =
+        NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
 
     override fun onResume() {
         super.onResume()
+        hasListenerPermission.value = isListenerEnabled()
         scheduleOrCancelReminder(
             enabled = prefs.getBoolean("reminder_enabled", false),
             interval = prefs.getString("reminder_interval", "DAILY") ?: "DAILY",
@@ -90,7 +97,10 @@ class MainActivity : ComponentActivity() {
         val appSettingDao = db.appSettingDao()
         prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
+        hasListenerPermission.value = isListenerEnabled()
+
         setContent {
+            val hasPermission by hasListenerPermission
             val navController = rememberNavController()
             val notifications by notifDao.getAll().collectAsState(initial = emptyList())
             val pendingPrompts by MyNotificationListener.pendingPrompts.collectAsState()
@@ -187,6 +197,10 @@ class MainActivity : ComponentActivity() {
 
             MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    if (!hasPermission) {
+                        PermissionScreen(onGrantAccess = { openNotificationAccessSettings() })
+                        return@Surface
+                    }
                     NavHost(navController = navController, startDestination = "list") {
                         composable("list") {
                             NotificationListScreen(
