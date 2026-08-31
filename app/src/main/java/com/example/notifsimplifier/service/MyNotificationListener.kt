@@ -51,6 +51,7 @@ class MyNotificationListener : NotificationListenerService() {
             val db = AppDatabase.getInstance(applicationContext)
             val settings = db.appSettingDao().getByPackage(packageName)
 
+            val effectiveMode: NotifMode
             if (settings == null) {
                 val displayName = runCatching {
                     applicationContext.packageManager
@@ -59,21 +60,27 @@ class MyNotificationListener : NotificationListenerService() {
                         ).toString()
                 }.getOrDefault(packageName)
 
+                val defaultModeStr = prefs.getString("new_app_default", NotifMode.REDIRECT.name)
+                    ?: NotifMode.REDIRECT.name
+                val defaultMode = runCatching { NotifMode.valueOf(defaultModeStr) }
+                    .getOrDefault(NotifMode.REDIRECT)
+
                 db.appSettingDao().insertIfAbsent(
                     AppSettingEntity(
                         packageName = packageName,
                         displayName = displayName,
-                        mode = NotifMode.UNSET.name
+                        mode = defaultMode.name
                     )
                 )
-                _pendingPrompts.update { if (packageName !in it) it + packageName else it }
-                // Notification passes through normally until the user sets a mode.
-                return@launch
+                effectiveMode = defaultMode
+            } else {
+                effectiveMode = runCatching { NotifMode.valueOf(settings.mode) }
+                    .getOrDefault(NotifMode.UNSET)
             }
 
-            when (NotifMode.valueOf(settings.mode)) {
+            when (effectiveMode) {
                 NotifMode.UNSET -> {
-                    // Already in DB but not yet configured — re-queue the prompt if needed.
+                    // Not yet configured — queue the prompt.
                     _pendingPrompts.update { if (packageName !in it) it + packageName else it }
                 }
                 NotifMode.REDIRECT -> {

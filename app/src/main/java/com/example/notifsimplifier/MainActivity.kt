@@ -120,6 +120,13 @@ class MainActivity : ComponentActivity() {
             var neverRedirectPackages by remember {
                 mutableStateOf(prefs.getStringSet("never_redirect_packages", emptySet()) ?: emptySet())
             }
+            var defaultMode by remember {
+                mutableStateOf(
+                    runCatching {
+                        NotifMode.valueOf(prefs.getString("new_app_default", NotifMode.REDIRECT.name) ?: NotifMode.REDIRECT.name)
+                    }.getOrDefault(NotifMode.REDIRECT)
+                )
+            }
 
             val darkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
@@ -227,6 +234,11 @@ class MainActivity : ComponentActivity() {
                                 onMarketingFilterChange = { enabled ->
                                     marketingFilterEnabled = enabled
                                     prefs.edit().putBoolean("marketing_filter", enabled).apply()
+                                },
+                                defaultMode = defaultMode,
+                                onDefaultModeChange = { mode ->
+                                    defaultMode = mode
+                                    prefs.edit().putString("new_app_default", mode.name).apply()
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onNeverRedirect = { navController.navigate("never_redirect") },

@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.notifsimplifier.data.NotifMode
 
 @Composable
 private fun SmartFilterRow(
@@ -89,6 +90,8 @@ fun SettingsScreen(
     onOngoingFilterChange: (Boolean) -> Unit,
     marketingFilterEnabled: Boolean,
     onMarketingFilterChange: (Boolean) -> Unit,
+    defaultMode: NotifMode,
+    onDefaultModeChange: (NotifMode) -> Unit,
     onManageApps: () -> Unit,
     onNeverRedirect: () -> Unit,
     reminderEnabled: Boolean,
@@ -358,6 +361,37 @@ fun SettingsScreen(
                 )
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Default for new apps",
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                SingleChoiceSegmentedButtonRow {
+                    listOf(NotifMode.REDIRECT, NotifMode.INSTANT).forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = defaultMode == mode,
+                            onClick = { onDefaultModeChange(mode) },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = 2),
+                            label = {
+                                Text(
+                                    text = if (mode == NotifMode.REDIRECT) "Redirect" else "Instant",
+                                    fontFamily = FontFamily.Default
+                                )
+                            }
+                        )
+                    }
+                }
             }
 
             HorizontalDivider()
