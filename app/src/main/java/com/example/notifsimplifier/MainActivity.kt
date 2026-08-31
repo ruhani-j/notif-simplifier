@@ -328,6 +328,7 @@ class MainActivity : ComponentActivity() {
         if (pi != null) {
             try {
                 pi.send()
+                moveTaskToBack(true)
                 return
             } catch (_: PendingIntent.CanceledException) {
                 MyNotificationListener.pendingIntents.remove(notifId)
@@ -335,6 +336,7 @@ class MainActivity : ComponentActivity() {
         }
         packageManager.getLaunchIntentForPackage(packageName)
             ?.let { startActivity(it) }
+        moveTaskToBack(true)
     }
 
     private fun restorePendingIntent(bytes: ByteArray): PendingIntent? {
