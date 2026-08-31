@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [NotificationEntity::class, AppSettingEntity::class], version = 5)
+@Database(entities = [NotificationEntity::class, AppSettingEntity::class], version = 6)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun notificationDao(): NotificationDao
@@ -54,6 +54,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // -2 = use global TTL setting
+                database.execSQL("ALTER TABLE app_settings ADD COLUMN historyTtlHours INTEGER NOT NULL DEFAULT -2")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -61,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "notifications.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build().also { INSTANCE = it }
             }
         }

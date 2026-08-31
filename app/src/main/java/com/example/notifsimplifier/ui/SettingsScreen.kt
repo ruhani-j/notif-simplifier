@@ -87,7 +87,8 @@ private val TTL_OPTIONS = listOf(
 )
 
 fun ttlLabel(hours: Int): String =
-    TTL_OPTIONS.firstOrNull { it.first == hours }?.second ?: "$hours hours"
+    if (hours == -2) "Default"
+    else TTL_OPTIONS.firstOrNull { it.first == hours }?.second ?: "$hours hours"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,6 +118,8 @@ fun SettingsScreen(
     historyTtlHours: Int,
     onHistoryTtlChange: (Int) -> Unit,
     onViewHistory: () -> Unit,
+    onOpenSystemNotifHistory: () -> Unit,
+    onOpenHistoryApps: () -> Unit,
     onGrantNotificationAccess: () -> Unit,
     onOpenAppNotificationSettings: () -> Unit,
     onNavigateBack: () -> Unit
@@ -556,12 +559,50 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable { onOpenSystemNotifHistory() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "System notification history",
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
                     .clickable { onViewHistory() }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Notification history",
+                    text = "Notification log",
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenHistoryApps() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "History apps",
                     fontFamily = FontFamily.Default,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)

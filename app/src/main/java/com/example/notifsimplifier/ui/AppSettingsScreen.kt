@@ -21,8 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -39,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.notifsimplifier.data.AppSettingDao
-import com.example.notifsimplifier.data.AppSettingEntity
 import com.example.notifsimplifier.data.NotifMode
 import kotlinx.coroutines.launch
 
@@ -47,7 +44,6 @@ private val BG = Color.Black
 private val TEXT = Color.White
 private val MUTED = Color(0xFF888888)
 private val DIVIDER = Color(0xFF222222)
-private val ACCENT = Color(0xFF7EB8F7)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,15 +99,12 @@ fun AppSettingsScreen(
                             allInstant -> NotifMode.INSTANT
                             else -> null
                         },
-                        collectHistory = false,
-                        showCollect = false,
                         bold = true,
                         onModeSelect = { mode ->
                             scope.launch {
                                 apps.forEach { appSettingDao.update(it.copy(mode = mode.name)) }
                             }
-                        },
-                        onCollectChange = {}
+                        }
                     )
                     HorizontalDivider(color = Color.White.copy(alpha = 0.3f), thickness = 0.5.dp)
                 }
@@ -120,14 +113,9 @@ fun AppSettingsScreen(
                     AppModeRow(
                         name = app.displayName,
                         currentMode = mode,
-                        collectHistory = app.collectHistory,
-                        showCollect = mode == NotifMode.INSTANT,
                         bold = false,
                         onModeSelect = { newMode ->
                             scope.launch { appSettingDao.update(app.copy(mode = newMode.name)) }
-                        },
-                        onCollectChange = { enabled ->
-                            scope.launch { appSettingDao.update(app.copy(collectHistory = enabled)) }
                         }
                     )
                     HorizontalDivider(color = DIVIDER, thickness = 0.5.dp)
@@ -141,71 +129,35 @@ fun AppSettingsScreen(
 private fun AppModeRow(
     name: String,
     currentMode: NotifMode?,
-    collectHistory: Boolean,
-    showCollect: Boolean,
     bold: Boolean,
-    onModeSelect: (NotifMode) -> Unit,
-    onCollectChange: (Boolean) -> Unit
+    onModeSelect: (NotifMode) -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(BG)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = name,
-                color = TEXT,
-                fontFamily = FontFamily.Default,
-                fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
+        Text(
+            text = name,
+            color = TEXT,
+            fontFamily = FontFamily.Default,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ModeChip(
+                label = "Redirect",
+                selected = currentMode == NotifMode.REDIRECT,
+                onClick = { onModeSelect(NotifMode.REDIRECT) }
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ModeChip(
-                    label = "Redirect",
-                    selected = currentMode == NotifMode.REDIRECT,
-                    onClick = { onModeSelect(NotifMode.REDIRECT) }
-                )
-                ModeChip(
-                    label = "Instant",
-                    selected = currentMode == NotifMode.INSTANT,
-                    onClick = { onModeSelect(NotifMode.INSTANT) }
-                )
-            }
-        }
-
-        if (showCollect) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Save to history",
-                    color = if (collectHistory) ACCENT else MUTED,
-                    fontFamily = FontFamily.Default,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = collectHistory,
-                    onCheckedChange = onCollectChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = BG,
-                        checkedTrackColor = ACCENT,
-                        uncheckedThumbColor = MUTED,
-                        uncheckedTrackColor = Color(0xFF333333),
-                        uncheckedBorderColor = Color(0xFF444444)
-                    )
-                )
-            }
+            ModeChip(
+                label = "Instant",
+                selected = currentMode == NotifMode.INSTANT,
+                onClick = { onModeSelect(NotifMode.INSTANT) }
+            )
         }
     }
 }

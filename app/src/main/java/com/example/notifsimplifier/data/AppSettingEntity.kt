@@ -11,5 +11,7 @@ data class AppSettingEntity(
     // Legacy columns kept for DB compatibility — no longer used in app logic.
     val isRedirected: Boolean = false,
     val isAlwaysShowNormally: Boolean = false,
-    val collectHistory: Boolean = false
+    val collectHistory: Boolean = false,
+    // -2 = use global TTL setting, -1 = never expire, positive = hours
+    val historyTtlHours: Int = -2
 )
