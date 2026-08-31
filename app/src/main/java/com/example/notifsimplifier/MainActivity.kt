@@ -28,15 +28,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.notifsimplifier.data.AppDatabase
 import com.example.notifsimplifier.data.NotifMode
+import com.example.notifsimplifier.service.CleanupWorker
 import com.example.notifsimplifier.service.MyNotificationListener
 import com.example.notifsimplifier.service.ReminderWorker
 import com.example.notifsimplifier.ui.AppSettingsScreen
 import com.example.notifsimplifier.ui.NeverRedirectScreen
+import com.example.notifsimplifier.ui.NotificationHistoryScreen
 import com.example.notifsimplifier.ui.NotificationListScreen
 import com.example.notifsimplifier.ui.PermissionScreen
 import com.example.notifsimplifier.ui.ReminderInterval
@@ -72,6 +76,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun scheduleCleanupWorker() {
+        val request = PeriodicWorkRequestBuilder<CleanupWorker>(1, TimeUnit.HOURS).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            CleanupWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+    }
+
     private fun scheduleOrCancelReminder(enabled: Boolean, interval: String, customHours: Int) {
         val wm = WorkManager.getInstance(this)
         if (!enabled) {
@@ -98,11 +111,13 @@ class MainActivity : ComponentActivity() {
         prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
         hasListenerPermission.value = isListenerEnabled()
+        scheduleCleanupWorker()
 
         setContent {
             val hasPermission by hasListenerPermission
             val navController = rememberNavController()
             val notifications by notifDao.getAll().collectAsState(initial = emptyList())
+            val collectedNotifications by notifDao.getCollected().collectAsState(initial = emptyList())
             val pendingPrompts by MyNotificationListener.pendingPrompts.collectAsState()
 
             var themeMode by remember {
@@ -137,6 +152,7 @@ class MainActivity : ComponentActivity() {
                     }.getOrDefault(NotifMode.REDIRECT)
                 )
             }
+            var historyTtlHours by remember { mutableStateOf(prefs.getInt("history_ttl_hours", 24)) }
 
             val darkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
@@ -256,6 +272,12 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onManageApps = { navController.navigate("manage_apps") },
                                 onNeverRedirect = { navController.navigate("never_redirect") },
+                                historyTtlHours = historyTtlHours,
+                                onHistoryTtlChange = { hours ->
+                                    historyTtlHours = hours
+                                    prefs.edit().putInt("history_ttl_hours", hours).apply()
+                                },
+                                onViewHistory = { navController.navigate("history") },
                                 reminderEnabled = reminderEnabled,
                                 onReminderEnabledChange = { enabled ->
                                     reminderEnabled = enabled
@@ -304,6 +326,20 @@ class MainActivity : ComponentActivity() {
                                     prefs.edit().putStringSet("never_redirect_packages", updated).apply()
                                 },
                                 onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("history") {
+                            NotificationHistoryScreen(
+                                notifications = collectedNotifications,
+                                onClearAll = {
+                                    lifecycleScope.launch { notifDao.clearCollected() }
+                                },
+                                onNavigateBack = { navController.popBackStack() },
+                                onNotificationClick = { notif -> fireNotificationIntent(notif.id, notif.appName, notif.intentBytes) },
+                                onDismissNotification = { notif ->
+                                    lifecycleScope.launch { notifDao.deleteById(notif.id) }
+                                    MyNotificationListener.pendingIntents.remove(notif.id)
+                                }
                             )
                         }
                         composable("set_filter/{packageName}") { backStack ->

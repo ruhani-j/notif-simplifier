@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [NotificationEntity::class, AppSettingEntity::class], version = 4)
+@Database(entities = [NotificationEntity::class, AppSettingEntity::class], version = 5)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun notificationDao(): NotificationDao
@@ -44,6 +44,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // source: "REDIRECT" for existing rows (they were all redirect captures)
+                database.execSQL("ALTER TABLE notifications ADD COLUMN source TEXT NOT NULL DEFAULT 'REDIRECT'")
+                // expiresAt: 0 = never (existing rows kept forever, no change in behaviour)
+                database.execSQL("ALTER TABLE notifications ADD COLUMN expiresAt INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE app_settings ADD COLUMN collectHistory INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -51,7 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "notifications.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build().also { INSTANCE = it }
             }
         }

@@ -3,6 +3,7 @@ package com.example.notifsimplifier.service
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Parcel
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -77,7 +78,6 @@ class MyNotificationListener : NotificationListenerService() {
 
             when (effectiveMode) {
                 NotifMode.UNSET -> {
-                    // Not yet configured — apply system filter here so explicitly-configured apps bypass it.
                     if (prefs.getBoolean("system_filter", true) &&
                         SmartFilters.isSystemApp(applicationContext, packageName)) return@launch
                     _pendingPrompts.update { if (packageName !in it) it + packageName else it }
@@ -85,7 +85,7 @@ class MyNotificationListener : NotificationListenerService() {
                 NotifMode.REDIRECT -> {
                     val importantBypassEnabled = prefs.getBoolean("important_bypass", true)
                     if (importantBypassEnabled && ImportantDetector.isImportant(title, text)) {
-                        return@launch // show normally
+                        return@launch
                     }
                     val rowId = db.notificationDao().insert(
                         NotificationEntity(
@@ -93,13 +93,16 @@ class MyNotificationListener : NotificationListenerService() {
                             title = title,
                             text = text,
                             timestamp = System.currentTimeMillis(),
-                            intentBytes = contentIntent?.let { marshallIntent(it) }
+                            intentBytes = contentIntent?.let { marshallIntent(it) },
+                            source = "REDIRECT",
+                            expiresAt = computeExpiresAt(prefs)
                         )
                     )
                     if (contentIntent != null) pendingIntents[rowId] = contentIntent
                     cancelNotification(sbn.key)
                 }
                 NotifMode.INSTANT -> {
+                    // Marketing filter takes priority — redirect spam even from Instant apps.
                     val marketingFilterEnabled = prefs.getBoolean("marketing_filter", false)
                     if (marketingFilterEnabled && MarketingDetector.isMarketing(title, text)) {
                         val rowId = db.notificationDao().insert(
@@ -108,19 +111,44 @@ class MyNotificationListener : NotificationListenerService() {
                                 title = title,
                                 text = text,
                                 timestamp = System.currentTimeMillis(),
-                                intentBytes = contentIntent?.let { marshallIntent(it) }
+                                intentBytes = contentIntent?.let { marshallIntent(it) },
+                                source = "REDIRECT",
+                                expiresAt = computeExpiresAt(prefs)
                             )
                         )
                         if (contentIntent != null) pendingIntents[rowId] = contentIntent
                         cancelNotification(sbn.key)
+                        return@launch
                     }
-                    // Otherwise show normally.
+                    // Not marketing — collect to history if the user enabled it for this app.
+                    // The status bar notification is NOT cancelled; it still appears normally.
+                    if (settings?.collectHistory == true) {
+                        val rowId = db.notificationDao().insert(
+                            NotificationEntity(
+                                appName = packageName,
+                                title = title,
+                                text = text,
+                                timestamp = System.currentTimeMillis(),
+                                intentBytes = contentIntent?.let { marshallIntent(it) },
+                                source = "COLLECT",
+                                expiresAt = computeExpiresAt(prefs)
+                            )
+                        )
+                        if (contentIntent != null) pendingIntents[rowId] = contentIntent
+                    }
+                    // Show normally.
                 }
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) = Unit
+
+    private fun computeExpiresAt(prefs: SharedPreferences): Long {
+        val hours = prefs.getInt("history_ttl_hours", 24)
+        return if (hours == -1) 0L
+               else System.currentTimeMillis() + hours * 60L * 60L * 1000L
+    }
 
     private fun marshallIntent(pi: PendingIntent): ByteArray? {
         return try {

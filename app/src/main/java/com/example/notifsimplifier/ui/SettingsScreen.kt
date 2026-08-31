@@ -25,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -75,6 +76,19 @@ private fun SmartFilterRow(
     }
 }
 
+private val TTL_OPTIONS = listOf(
+    Pair(1,   "1 hour"),
+    Pair(6,   "6 hours"),
+    Pair(24,  "1 day"),
+    Pair(72,  "3 days"),
+    Pair(168, "7 days"),
+    Pair(720, "30 days"),
+    Pair(-1,  "Never")
+)
+
+fun ttlLabel(hours: Int): String =
+    TTL_OPTIONS.firstOrNull { it.first == hours }?.second ?: "$hours hours"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -100,6 +114,9 @@ fun SettingsScreen(
     onReminderIntervalChange: (ReminderInterval) -> Unit,
     reminderCustomHours: Int,
     onReminderCustomHoursChange: (Int) -> Unit,
+    historyTtlHours: Int,
+    onHistoryTtlChange: (Int) -> Unit,
+    onViewHistory: () -> Unit,
     onGrantNotificationAccess: () -> Unit,
     onOpenAppNotificationSettings: () -> Unit,
     onNavigateBack: () -> Unit
@@ -109,6 +126,49 @@ fun SettingsScreen(
     var showSystemInfo by remember { mutableStateOf(false) }
     var showInstallInfo by remember { mutableStateOf(false) }
     var showMarketingInfo by remember { mutableStateOf(false) }
+    var showTtlPicker by remember { mutableStateOf(false) }
+
+    if (showTtlPicker) {
+        AlertDialog(
+            onDismissRequest = { showTtlPicker = false },
+            title = { Text("Keep notifications for", fontFamily = FontFamily.Default) },
+            text = {
+                Column {
+                    TTL_OPTIONS.forEach { (hours, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onHistoryTtlChange(hours)
+                                    showTtlPicker = false
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = historyTtlHours == hours,
+                                onClick = {
+                                    onHistoryTtlChange(hours)
+                                    showTtlPicker = false
+                                }
+                            )
+                            Text(
+                                text = label,
+                                fontFamily = FontFamily.Default,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtlPicker = false }) {
+                    Text("Cancel", fontFamily = FontFamily.Default)
+                }
+            }
+        )
+    }
 
     if (showOtpInfo) {
         AlertDialog(
@@ -481,6 +541,56 @@ fun SettingsScreen(
                         )
                     }
                 }
+            }
+
+            HorizontalDivider()
+
+            Text(
+                text = "HISTORY",
+                fontFamily = FontFamily.Default,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onViewHistory() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Notification history",
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTtlPicker = true }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Keep notifications for",
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = ttlLabel(historyTtlHours),
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             HorizontalDivider()

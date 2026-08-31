@@ -10,5 +10,6 @@ data class AppSettingEntity(
     val mode: String = NotifMode.UNSET.name,
     // Legacy columns kept for DB compatibility — no longer used in app logic.
     val isRedirected: Boolean = false,
-    val isAlwaysShowNormally: Boolean = false
+    val isAlwaysShowNormally: Boolean = false,
+    val collectHistory: Boolean = false
 )

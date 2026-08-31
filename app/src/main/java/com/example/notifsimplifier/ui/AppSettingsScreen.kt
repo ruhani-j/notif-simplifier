@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -44,6 +47,7 @@ private val BG = Color.Black
 private val TEXT = Color.White
 private val MUTED = Color(0xFF888888)
 private val DIVIDER = Color(0xFF222222)
+private val ACCENT = Color(0xFF7EB8F7)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,22 +103,31 @@ fun AppSettingsScreen(
                             allInstant -> NotifMode.INSTANT
                             else -> null
                         },
+                        collectHistory = false,
+                        showCollect = false,
                         bold = true,
                         onModeSelect = { mode ->
                             scope.launch {
                                 apps.forEach { appSettingDao.update(it.copy(mode = mode.name)) }
                             }
-                        }
+                        },
+                        onCollectChange = {}
                     )
                     HorizontalDivider(color = Color.White.copy(alpha = 0.3f), thickness = 0.5.dp)
                 }
                 items(apps, key = { it.packageName }) { app ->
+                    val mode = runCatching { NotifMode.valueOf(app.mode) }.getOrDefault(NotifMode.UNSET)
                     AppModeRow(
                         name = app.displayName,
-                        currentMode = runCatching { NotifMode.valueOf(app.mode) }.getOrDefault(NotifMode.UNSET),
+                        currentMode = mode,
+                        collectHistory = app.collectHistory,
+                        showCollect = mode == NotifMode.INSTANT,
                         bold = false,
-                        onModeSelect = { mode ->
-                            scope.launch { appSettingDao.update(app.copy(mode = mode.name)) }
+                        onModeSelect = { newMode ->
+                            scope.launch { appSettingDao.update(app.copy(mode = newMode.name)) }
+                        },
+                        onCollectChange = { enabled ->
+                            scope.launch { appSettingDao.update(app.copy(collectHistory = enabled)) }
                         }
                     )
                     HorizontalDivider(color = DIVIDER, thickness = 0.5.dp)
@@ -128,35 +141,71 @@ fun AppSettingsScreen(
 private fun AppModeRow(
     name: String,
     currentMode: NotifMode?,
+    collectHistory: Boolean,
+    showCollect: Boolean,
     bold: Boolean,
-    onModeSelect: (NotifMode) -> Unit
+    onModeSelect: (NotifMode) -> Unit,
+    onCollectChange: (Boolean) -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(BG)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            color = TEXT,
-            fontFamily = FontFamily.Default,
-            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ModeChip(
-                label = "Redirect",
-                selected = currentMode == NotifMode.REDIRECT,
-                onClick = { onModeSelect(NotifMode.REDIRECT) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = name,
+                color = TEXT,
+                fontFamily = FontFamily.Default,
+                fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
             )
-            ModeChip(
-                label = "Instant",
-                selected = currentMode == NotifMode.INSTANT,
-                onClick = { onModeSelect(NotifMode.INSTANT) }
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ModeChip(
+                    label = "Redirect",
+                    selected = currentMode == NotifMode.REDIRECT,
+                    onClick = { onModeSelect(NotifMode.REDIRECT) }
+                )
+                ModeChip(
+                    label = "Instant",
+                    selected = currentMode == NotifMode.INSTANT,
+                    onClick = { onModeSelect(NotifMode.INSTANT) }
+                )
+            }
+        }
+
+        if (showCollect) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Save to history",
+                    color = if (collectHistory) ACCENT else MUTED,
+                    fontFamily = FontFamily.Default,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = collectHistory,
+                    onCheckedChange = onCollectChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = BG,
+                        checkedTrackColor = ACCENT,
+                        uncheckedThumbColor = MUTED,
+                        uncheckedTrackColor = Color(0xFF333333),
+                        uncheckedBorderColor = Color(0xFF444444)
+                    )
+                )
+            }
         }
     }
 }
