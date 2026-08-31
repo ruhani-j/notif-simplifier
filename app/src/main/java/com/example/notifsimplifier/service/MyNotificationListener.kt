@@ -39,9 +39,6 @@ class MyNotificationListener : NotificationListenerService() {
 
         if (prefs.getBoolean("otp_bypass", true) && OtpDetector.isOtp(title, text)) return
 
-        if (prefs.getBoolean("system_filter", true) &&
-            SmartFilters.isSystemApp(applicationContext, packageName)) return
-
         if (prefs.getBoolean("ongoing_filter", true) &&
             SmartFilters.isOngoing(sbn)) return
 
@@ -80,7 +77,9 @@ class MyNotificationListener : NotificationListenerService() {
 
             when (effectiveMode) {
                 NotifMode.UNSET -> {
-                    // Not yet configured — queue the prompt.
+                    // Not yet configured — apply system filter here so explicitly-configured apps bypass it.
+                    if (prefs.getBoolean("system_filter", true) &&
+                        SmartFilters.isSystemApp(applicationContext, packageName)) return@launch
                     _pendingPrompts.update { if (packageName !in it) it + packageName else it }
                 }
                 NotifMode.REDIRECT -> {
